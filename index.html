@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Astronomía" />
 <link rel="manifest" href="./manifest.webmanifest" />
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
-<link rel="apple-touch-icon" href="./icon-192.png" />
+<link rel="icon" type="image/svg+xml" href="./icon.svg" />
+<link rel="apple-touch-icon" href="./icon.svg" />
 <title>Astronomía</title>
 <style>
   :root{
@@ -242,10 +242,10 @@
 
 <div class="startmenu" id="startMenu">
   <div class="startcard">
-    <div class="starttitle">Constelaciones <span class="app-version">v0.1.0</span></div>
+    <div class="starttitle">Constelaciones <span class="app-version">v0.1.1</span></div>
     <div class="update-banner" id="updateBanner" role="status" aria-live="polite">
       <button type="button" id="updateNow">
-        <span class="update-idle"><strong>Actualizar</strong><small>v0.1.0</small></span>
+        <span class="update-idle"><strong>Actualizar</strong><small>v0.1.1</small></span>
         <span class="update-busy"><strong>Actualizando…</strong></span>
       </button>
     </div>
@@ -3258,7 +3258,7 @@ addEventListener('keydown',e=>{
 });
 
 
-const APP_VERSION='0.1.0';
+const APP_VERSION='0.1.1';
 
 async function tryEnterImmersive(){
   // En una PWA instalada con display:fullscreen Android ya debe abrir sin chrome.

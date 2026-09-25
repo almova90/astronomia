@@ -1,4 +1,4 @@
-const APP_VERSION='0.1.6';
+const APP_VERSION='0.1.7';
 const CACHE_NAME=`astronomia-${APP_VERSION}`;
 const APP_SHELL=[
   './',

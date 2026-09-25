@@ -9,9 +9,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Astronomía" />
-<link rel="manifest" href="./manifest.webmanifest?v=0.1.7" />
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=0.1.7" />
-<link rel="apple-touch-icon" href="./icon-192.png?v=0.1.7" />
+<link rel="manifest" href="./manifest.webmanifest?v=0.1.8" />
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=0.1.8" />
+<link rel="apple-touch-icon" href="./icon-192.png?v=0.1.8" />
 <title>Astronomía</title>
 <style>
   :root{
@@ -69,6 +69,9 @@
   .bottom .pill{border:0;box-shadow:none;background:rgba(12,17,27,.84)}
   .bottom .pill.primary{border:0;box-shadow:none}
   .bottom .iconbtn{border:0;box-shadow:none;background:rgba(12,17,27,.84);color:var(--text)}
+  body.day-visibility .bottom .iconbtn{background:rgba(34,44,66,.97);color:#fff}
+  body.day-visibility .question{background:rgba(24,32,49,.96);border-color:rgba(255,255,255,.24)}
+  body.day-visibility .status{background:rgba(25,34,52,.96);color:#e8eefc}
   .playbtn{
     min-width:118px;height:42px;padding:0 18px;border-radius:999px;
     background:#1fb35f !important;color:#fff !important;font-weight:800;letter-spacing:.01em
@@ -81,16 +84,19 @@
   .bottom[data-layout="explore"] #settingsBtn{order:3}
   .bottom[data-layout="game"] #modeBtn{order:1}
   .bottom[data-layout="game"] #orientBtn{order:2}
-  .bottom[data-layout="game"] #settingsBtn{order:3}
+  .bottom[data-layout="game"] #visibilityBoostBtn{order:3}
+  .bottom[data-layout="game"] #settingsBtn{order:4}
   .bottom[data-layout="locate"] #modeBtn{order:1}
   .bottom[data-layout="locate"] #orientBtn{order:2}
   .bottom[data-layout="locate"] #revealBtn{order:3}
-  .bottom[data-layout="locate"] #settingsBtn{order:4}
+  .bottom[data-layout="locate"] #visibilityBoostBtn{order:4}
+  .bottom[data-layout="locate"] #settingsBtn{order:5}
   .bottom[data-layout="identify"] #modeBtn{order:1}
   .bottom[data-layout="identify"] #focusBtn{order:2}
   .bottom[data-layout="identify"] #revealBtn{order:3}
   .bottom[data-layout="identify"] #orientBtn{order:4}
-  .bottom[data-layout="identify"] #settingsBtn{order:5}
+  .bottom[data-layout="identify"] #visibilityBoostBtn{order:5}
+  .bottom[data-layout="identify"] #settingsBtn{order:6}
   .status{
     padding:7px 11px;border-radius:999px;background:rgba(10,14,22,.74);
     border:1px solid rgba(255,255,255,.08);font-size:12px;color:var(--muted);backdrop-filter:blur(8px)
@@ -251,11 +257,11 @@
 
 <div class="startmenu" id="startMenu">
   <div class="startcard">
-    <div class="starttitle">Constelaciones <span class="app-version">v0.1.7</span></div>
+    <div class="starttitle">Constelaciones <span class="app-version">v0.1.8</span></div>
     <div class="install-banner" id="installBanner"><button type="button" id="installPwaBtn"><strong>Instalar Astronomía</strong></button></div>
     <div class="update-banner" id="updateBanner" role="status" aria-live="polite">
       <button type="button" id="updateNow">
-        <span class="update-idle"><strong>Actualizar</strong><small>v0.1.7</small></span>
+        <span class="update-idle"><strong>Actualizar</strong><small>v0.1.8</small></span>
         <span class="update-busy"><strong>Actualizando…</strong></span>
       </button>
     </div>
@@ -313,6 +319,11 @@
         <path d="M7.2 17.25 L10.2 9.1 L17.2 5.75 L14.25 13.9 Z" fill="currentColor" stroke="currentColor" stroke-width="1.05" stroke-linejoin="round"/>
         <circle cx="12" cy="12" r="1.12" fill="var(--bg)" stroke="var(--bg)" stroke-width="0.7"/>
       </g>
+    </svg>
+  </button>
+  <button class="iconbtn" id="visibilityBoostBtn" title="Modo noche" aria-label="Modo noche">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M18.2 15.7A7.4 7.4 0 0 1 8.3 5.8a7.5 7.5 0 1 0 9.9 9.9Z" fill="currentColor"/>
     </svg>
   </button>
   <button class="iconbtn" id="settingsBtn" aria-label="Ajustes" title="Ajustes">
@@ -508,7 +519,8 @@ const els = {
   bottomBar:document.getElementById('bottomBar'), focusBtn:document.getElementById('focusBtn'), revealBtn:document.getElementById('revealBtn'),
   settingsBtn:document.getElementById('settingsBtn'), closeSettings:document.getElementById('closeSettings'),
   modeBtn:document.getElementById('modeBtn'), closeModes:document.getElementById('closeModes'),
-  resetBtn:document.getElementById('resetBtn'), orientBtn:document.getElementById('orientBtn'), nextBtn:document.getElementById('nextBtn'),
+  resetBtn:document.getElementById('resetBtn'), orientBtn:document.getElementById('orientBtn'),
+  visibilityBoostBtn:document.getElementById('visibilityBoostBtn'), nextBtn:document.getElementById('nextBtn'),
   choices:document.getElementById('choices'), toast:document.getElementById('toast'), identifyAnswer:document.getElementById('identifyAnswer'),
   themeMode:document.getElementById('themeMode'),
   customBgRow:document.getElementById('customBgRow'), customStarRow:document.getElementById('customStarRow'),
@@ -550,6 +562,35 @@ let appStarted=false;
 let returnToMainMenuAfterSettings=false;
 let lastRenderT=0;
 let linePalette='multi';
+let daylightVisibility=false;
+
+function visibilityBoostIconMarkup(){
+  if(daylightVisibility){
+    return `<svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="3.8" fill="currentColor"/>
+      <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 2.2v2.4M12 19.4v2.4M2.2 12h2.4M19.4 12h2.4"/>
+        <path d="M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7"/>
+      </g>
+    </svg>`;
+  }
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M18.2 15.7A7.4 7.4 0 0 1 8.3 5.8a7.5 7.5 0 1 0 9.9 9.9Z" fill="currentColor"/>
+  </svg>`;
+}
+function updateVisibilityBoostUI(){
+  document.body.classList.toggle('day-visibility',daylightVisibility);
+  if(!els.visibilityBoostBtn) return;
+  els.visibilityBoostBtn.innerHTML=visibilityBoostIconMarkup();
+  const label=daylightVisibility ? 'Modo día' : 'Modo noche';
+  els.visibilityBoostBtn.title=label;
+  els.visibilityBoostBtn.setAttribute('aria-label',label);
+}
+function boostForDay(v){
+  const x=Math.max(0,Math.min(1,v));
+  return daylightVisibility ? Math.min(1,.34+.76*x) : x;
+}
+
 function updateLinePaletteUI(){
   linePaletteButtons.forEach(b=>b.classList.toggle('active',b.dataset.linepalette===linePalette));
 }
@@ -1235,7 +1276,7 @@ function currentFilterVisibilityFactor(s){
     const mag=Number.isFinite(s.mag) ? s.mag : 5;
     const magNorm=clamp01((genericLimitMag-mag+.65)/3.4);
     const brightBoost=clamp01((2.2-mag)/3.5);
-    return Math.max(.035,Math.min(1,.07+.73*magNorm+.20*brightBoost));
+    return boostForDay(Math.max(.035,Math.min(1,.07+.73*magNorm+.20*brightBoost)));
   }
 
   const info=s.visibilityByFilter?.[profile.key];
@@ -1244,7 +1285,7 @@ function currentFilterVisibilityFactor(s){
   const altNorm=clamp01((info.maxAltDeg-profile.minAltDeg)/(65-profile.minAltDeg));
   const magNorm=clamp01((profile.limitMag - s.mag + .55)/3.2);
   const base = profile.skyQuality*(0.58*magNorm + 0.42*altNorm);
-  return Math.max(.08, Math.min(1, .14 + .86*base));
+  return boostForDay(Math.max(.08, Math.min(1, .14 + .86*base)));
 }
 function starSeed(s){
   const key=String(s.id||s.name||'estrella');
@@ -1677,8 +1718,8 @@ for(let i=0;i<900;i++){
 function drawBackground(t=performance.now()){
   const n=+els.backgroundDensity.value;
   const visibility=+els.backgroundVisibility.value/100;
-  const alpha=.025+visibility*.72;
-  const scale=.42+visibility*.82;
+  const alpha=(daylightVisibility ? .10 : .025)+visibility*(daylightVisibility ? .86 : .72);
+  const scale=(daylightVisibility ? .50 : .42)+visibility*(daylightVisibility ? .92 : .82);
   const profile=currentFilterProfile();
   const driftX=startupMenuOpen ? Math.sin(t*0.00008)*10.0 : 0;
   const driftY=startupMenuOpen ? Math.cos(t*0.00007)*7.0 : 0;
@@ -1727,7 +1768,7 @@ function drawBackground(t=performance.now()){
   }
 }
 function drawGreatCircle(type,color){
-  ctx.save();ctx.strokeStyle=color;ctx.globalAlpha=.48;ctx.lineWidth=1;
+  ctx.save();ctx.strokeStyle=color;ctx.globalAlpha=daylightVisibility ? .72 : .48;ctx.lineWidth=daylightVisibility ? 1.25 : 1;
   let prev=null;
   for(let i=0;i<=240;i++){
     const lam=2*Math.PI*i/240;
@@ -1749,7 +1790,9 @@ function drawGreatCircle(type,color){
 }
 function drawCartographicGrid(){
   const light = els.themeMode.value==='light';
-  const color = light ? 'rgba(0,0,0,.16)' : 'rgba(255,255,255,.18)';
+  const color = light
+    ? (daylightVisibility ? 'rgba(0,0,0,.29)' : 'rgba(0,0,0,.16)')
+    : (daylightVisibility ? 'rgba(255,255,255,.34)' : 'rgba(255,255,255,.18)');
   ctx.save();
   ctx.strokeStyle=color;
   ctx.lineWidth=+(els.gridThickness?.value || 1.75);
@@ -1787,7 +1830,9 @@ function drawCartographicGrid(){
   }
 
     // Etiquetas de los polos celestes
-  const labelColor = light ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)';
+  const labelColor = light
+    ? (daylightVisibility ? 'rgba(0,0,0,.98)' : 'rgba(0,0,0,.8)')
+    : (daylightVisibility ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,.9)');
   ctx.setLineDash([]);
   ctx.fillStyle=labelColor;
   ctx.font='700 16px system-ui';
@@ -2023,7 +2068,7 @@ function shouldDrawLines(){
 }
 function drawConstellationLines(){
   if(!shouldDrawLines())return;
-  ctx.save();ctx.lineWidth=1.575;ctx.globalAlpha=.48;
+  ctx.save();ctx.lineWidth=1.575;ctx.globalAlpha=daylightVisibility ? .72 : .48;
 
   if(game.mode==='explore' || game.mode==='locate'){
     for(const c of currentExploreConstellations()){
@@ -2052,7 +2097,8 @@ function drawConstellationLines(){
 
       const paletteColor=lineColorForConstellation(c);
       ctx.strokeStyle=(flashing || remembered) ? paletteColor : currentBaseStarColor();
-      ctx.globalAlpha=flashing ? .96 : pulse>0 ? (.35+.62*pulse) : remembered ? .82 : .52;
+      const learningAlpha=flashing ? .96 : pulse>0 ? (.35+.62*pulse) : remembered ? .82 : .52;
+      ctx.globalAlpha=daylightVisibility ? Math.min(1,.18+1.12*learningAlpha) : learningAlpha;
       ctx.lineWidth=flashing ? 2.7 : thickMastered ? 4.05 : pulse>0 ? (1.575+1.05*pulse) : remembered ? 2.175 : 1.575;
       for(const seg of c.segments){
         const sa=c.stars[seg.a], sb=c.stars[seg.b];
@@ -2093,7 +2139,7 @@ function drawLabels(){
   const starLabelColor = els.themeMode.value==='light' ? '#1d2433' : '#dfe6f5';
 
   if(els.showConstNames.checked && game.mode==='explore'){
-    ctx.font='600 12px system-ui';ctx.fillStyle=labelColor;ctx.globalAlpha=.72;
+    ctx.font='600 12px system-ui';ctx.fillStyle=labelColor;ctx.globalAlpha=daylightVisibility ? .94 : .72;
     for(const c of currentExploreConstellations()){
       if(!constellationVisibleInFilter(c)) continue;
       const cent=filteredConstellationCentroid(c); if(!cent) continue;
@@ -2169,7 +2215,8 @@ function render(t){
       // Aprendizaje debe ser legible aunque Visibilidad esté en Realista:
       // aquí no aplicamos la atenuación de cielo urbano genérico.
       const baseAlpha = flashing ? 1 : pulse>0 ? (.42+.58*pulse) : .72;
-      ctx.globalAlpha=Math.max(.30, Math.min(1, baseAlpha*tw.alpha));
+      const learningStarAlpha=daylightVisibility ? Math.min(1,.18+1.08*baseAlpha) : baseAlpha;
+      ctx.globalAlpha=Math.max(.30, Math.min(1, learningStarAlpha*tw.alpha));
       drawStar(
         p.x,p.y,
         r*(pulse>0 ? 1+.16*pulse : 1)*tw.size,
@@ -3160,6 +3207,11 @@ if(els.resetBtn){
   };
 }
 els.orientBtn.onclick=()=>orientViewForActiveFilter();
+els.visibilityBoostBtn.onclick=()=>{
+  daylightVisibility=!daylightVisibility;
+  updateVisibilityBoostUI();
+  toast(daylightVisibility ? 'Modo día: visibilidad reforzada' : 'Modo noche');
+};
 els.focusBtn.onclick=()=>{
   if(game.mode==='identify' && game.targetStar) centerOn(game.targetStar.v);
 };
@@ -3208,6 +3260,7 @@ linePaletteButtons.forEach(btn=>{
   });
 });
 updateLinePaletteUI();
+updateVisibilityBoostUI();
 
 
 
@@ -3268,7 +3321,7 @@ addEventListener('keydown',e=>{
 });
 
 
-const APP_VERSION='0.1.7';
+const APP_VERSION='0.1.8';
 
 let deferredInstallPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{

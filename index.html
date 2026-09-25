@@ -1,0 +1,3340 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#05070d" />
+<meta name="application-name" content="Astronomía" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Astronomía" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
+<title>Astronomía</title>
+<style>
+  :root{
+    --bg:#05070d;
+    --star:#ffffff;
+    --panel:rgba(14,18,28,.88);
+    --panel2:rgba(25,30,44,.92);
+    --text:#f6f7fb;
+    --muted:#aeb7c8;
+    --accent:#8fb7ff;
+    --good:#5fe394;
+    --bad:#ff6b74;
+    --line:#7f93bc;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text)}
+  body{touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+  #sky{position:fixed;inset:0;width:100%;height:100%;display:block;background:var(--bg)}
+  .topbar{
+    position:fixed;left:0;top:0;right:0;z-index:10;
+    min-height:74px;padding:10px 12px calc(10px + env(safe-area-inset-top));
+    display:grid;grid-template-columns:42px 1fr 42px;gap:10px;align-items:center;
+    background:linear-gradient(to bottom,rgba(6,8,13,.90),rgba(6,8,13,.48),transparent);
+    pointer-events:none;
+  }
+  .topbar>*{pointer-events:auto}
+  .brand{display:flex;align-items:center;justify-content:center;width:42px;min-height:42px}
+  .orb{width:30px;height:30px;border-radius:50%;border:1px solid #dce6ff;box-shadow:inset -7px -4px 14px rgba(143,183,255,.25)}
+  .question{
+    justify-self:center;text-align:center;min-width:0;max-width:min(62vw,700px);
+    padding:8px 12px;border-radius:14px;background:rgba(11,15,24,.76);backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.09)
+  }
+  .qsmall{display:none}
+  .qmain{font-size:clamp(15px,2.5vw,22px);font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .score{font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted);margin-top:2px}
+  button,select,input{font:inherit}
+  .iconbtn,.pill,.choice{
+    color:var(--text);background:rgba(16,21,32,.88);border:1px solid rgba(255,255,255,.11);
+    border-radius:999px;padding:9px 12px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.18)
+  }
+  .iconbtn{width:42px;height:42px;padding:0;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .iconbtn svg{width:22px;height:22px;display:block}
+  .pill:hover,.iconbtn:hover,.choice:hover{border-color:rgba(255,255,255,.25)}
+  .pill.primary{background:#e9eefb;color:#0c1220;border-color:#e9eefb;font-weight:700}
+  .bottom{
+    position:fixed;z-index:12;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);
+    width:min(96vw,980px);display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap;
+    pointer-events:none;
+  }
+  .bottom>*{pointer-events:auto}
+  .bottom .pill{border:0;box-shadow:none;background:rgba(12,17,27,.84)}
+  .bottom .pill.primary{border:0;box-shadow:none}
+  .bottom .iconbtn{border:0;box-shadow:none;background:rgba(12,17,27,.84);color:var(--text)}
+  .playbtn{
+    min-width:118px;height:42px;padding:0 18px;border-radius:999px;
+    background:#1fb35f !important;color:#fff !important;font-weight:800;letter-spacing:.01em
+  }
+  .exitbtn{
+    color:#ffd0d5 !important;background:rgba(72,20,30,.90) !important
+  }
+  .bottom[data-layout="explore"] #orientBtn{order:1}
+  .bottom[data-layout="explore"] #modeBtn{order:2}
+  .bottom[data-layout="explore"] #settingsBtn{order:3}
+  .bottom[data-layout="game"] #modeBtn{order:1}
+  .bottom[data-layout="game"] #orientBtn{order:2}
+  .bottom[data-layout="game"] #settingsBtn{order:3}
+  .bottom[data-layout="locate"] #modeBtn{order:1}
+  .bottom[data-layout="locate"] #orientBtn{order:2}
+  .bottom[data-layout="locate"] #revealBtn{order:3}
+  .bottom[data-layout="locate"] #settingsBtn{order:4}
+  .bottom[data-layout="identify"] #modeBtn{order:1}
+  .bottom[data-layout="identify"] #focusBtn{order:2}
+  .bottom[data-layout="identify"] #revealBtn{order:3}
+  .bottom[data-layout="identify"] #orientBtn{order:4}
+  .bottom[data-layout="identify"] #settingsBtn{order:5}
+  .status{
+    padding:7px 11px;border-radius:999px;background:rgba(10,14,22,.74);
+    border:1px solid rgba(255,255,255,.08);font-size:12px;color:var(--muted);backdrop-filter:blur(8px)
+  }
+  .drawer{
+    position:fixed;z-index:30;top:0;right:0;height:100%;width:min(92vw,390px);
+    background:var(--panel);backdrop-filter:blur(16px);border-left:1px solid rgba(255,255,255,.10);
+    transform:translateX(105%);transition:transform .24s ease;padding:calc(18px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom));
+    overflow:auto;touch-action:pan-y;
+  }
+  .drawer.open{transform:translateX(0)}
+  .drawer h2{margin:0 0 14px;font-size:20px}
+  .drawer h3{margin:22px 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:10px 0}
+  .row label{font-size:14px}
+  .swatchrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:220px}
+  .swatchbtn{
+    width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.18);
+    box-shadow:0 0 0 1px rgba(0,0,0,.18) inset;cursor:pointer;position:relative;padding:0;background:transparent
+  }
+  .swatchbtn.active{outline:2px solid #dfe7ff;outline-offset:2px;border-color:rgba(255,255,255,.9)}
+  .topspacer{width:42px;height:42px}
+  .row select{max-width:180px}
+  select{
+    color:var(--text);background:var(--panel2);border:1px solid rgba(255,255,255,.12);
+    border-radius:10px;padding:8px 10px
+  }
+  input[type=color]{width:46px;height:30px;border:0;background:transparent;padding:0}
+  input[type=checkbox]{width:19px;height:19px;accent-color:#9dbfff}
+  input[type=range]{width:180px;accent-color:#9dbfff}
+  .rangebox{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+  .rangeval{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .closex{position:absolute;right:14px;top:calc(12px + env(safe-area-inset-top))}
+  .modegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mode{
+    min-height:82px;border-radius:14px;border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.035);color:var(--text);padding:10px;text-align:left;cursor:pointer
+  }
+  .mode b{display:block;font-size:14px;margin-bottom:3px}
+  .mode span{font-size:11px;color:var(--muted);line-height:1.25}
+  .mode.active{border-color:#a8c4ff;background:rgba(143,183,255,.12)}
+  #choices{
+    position:fixed;z-index:15;left:50%;bottom:calc(72px + env(safe-area-inset-bottom));transform:translateX(-50%);
+    width:min(96vw,920px);display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  }
+  .choice{border-radius:12px;padding:11px 16px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .choice.good{background:rgba(95,227,148,.18);border-color:var(--good)}
+  .choice.bad{background:rgba(255,107,116,.18);border-color:var(--bad)}
+  .toast{
+    position:fixed;z-index:40;left:50%;top:90px;transform:translate(-50%,-10px);
+    opacity:0;transition:.2s;pointer-events:none;padding:9px 13px;border-radius:999px;
+    background:rgba(8,12,20,.88);border:1px solid rgba(255,255,255,.12);font-size:13px;
+    max-width:min(94vw,720px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .identifyanswer{
+    position:fixed;z-index:41;left:50%;bottom:calc(70px + env(safe-area-inset-bottom));
+    transform:translate(-50%,8px);opacity:0;pointer-events:none;
+    padding:9px 15px;border-radius:999px;background:rgba(8,12,20,.9);
+    border:1px solid rgba(255,255,255,.12);font-size:14px;font-weight:700;
+    transition:opacity .16s,transform .16s;white-space:nowrap;max-width:92vw;
+    overflow:hidden;text-overflow:ellipsis
+  }
+  .identifyanswer.show{opacity:1;transform:translate(-50%,0)}
+  .legend{
+    position:fixed;z-index:8;right:10px;bottom:88px;font-size:11px;color:var(--muted);
+    background:rgba(8,12,20,.48);border:1px solid rgba(255,255,255,.06);padding:7px 9px;border-radius:10px;
+    pointer-events:none
+  }
+  .help{font-size:12px;color:var(--muted);line-height:1.45}
+  .startmenu{
+    position:fixed;inset:0;z-index:24;display:grid;place-items:center;
+    padding:24px;pointer-events:none;
+  }
+  .startmenu.hidden{display:none}
+  .startcard{
+    pointer-events:auto;width:min(90vw,560px);padding:22px;border-radius:24px;
+    background:rgba(9,13,22,.72);border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(18px);box-shadow:0 24px 70px rgba(0,0,0,.38);
+  }
+  .starttitle{font-size:22px;font-weight:800;text-align:center;margin:0 0 16px}
+  .app-version{font-size:10px;font-weight:700;color:rgba(255,255,255,.48);vertical-align:middle;margin-left:5px;letter-spacing:.02em}
+  .update-banner{display:none;justify-content:center;margin:-5px 0 13px}
+  .update-banner.show{display:flex}
+  .update-banner button{
+    border:0;border-radius:999px;padding:8px 13px;background:#1fb35f;color:#fff;
+    font:inherit;box-shadow:0 7px 22px rgba(0,0,0,.22);cursor:pointer
+  }
+  .update-banner button:active{transform:scale(.97)}
+  .update-banner .update-idle{display:flex;align-items:center;gap:7px}
+  .update-banner small{font-size:10px;opacity:.76}
+  .update-banner .update-busy{display:none}
+  .update-banner button.updating .update-idle{display:none}
+  .update-banner button.updating .update-busy{display:inline}
+  @media (display-mode: fullscreen){
+    html,body{height:100dvh}
+  }
+  .startgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .startoption{
+    min-height:72px;border-radius:16px;border:1px solid rgba(255,255,255,.11);
+    background:rgba(255,255,255,.045);color:var(--text);padding:12px 14px;
+    text-align:left;cursor:pointer
+  }
+  .startoption:hover{border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.07)}
+  .startoption b{display:block;font-size:15px;margin-bottom:3px}
+  .startoption span{display:block;font-size:11px;color:var(--muted);line-height:1.25}
+  .startoption.coming{opacity:.56}
+  .startoption.wide,.startoption.settings{grid-column:1/-1}
+  .startoption.settings{min-height:54px;text-align:center}
+  @media(max-width:560px){
+    .startgrid{grid-template-columns:1fr}
+    .startoption.settings{grid-column:auto}
+    .startcard{padding:18px}
+  }
+  .starinfo{
+    position:fixed;z-index:22;left:50%;bottom:calc(72px + env(safe-area-inset-bottom));
+    transform:translate(-50%,18px);width:min(92vw,650px);display:none;
+    grid-template-columns:92px 1fr auto;gap:14px;align-items:center;
+    padding:14px 14px 14px 16px;border-radius:20px;
+    background:rgba(12,17,27,.72);border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(18px);box-shadow:0 16px 50px rgba(0,0,0,.32);
+  }
+  .starinfo.open{display:grid;animation:starInfoIn .18s ease-out forwards}
+  @keyframes starInfoIn{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+  .starModel{width:82px;height:82px;display:grid;place-items:center}
+  .starSphereCanvas{
+    width:78px;height:78px;display:block;border-radius:50%;
+    filter:drop-shadow(0 0 10px rgba(255,255,255,.14));
+  }
+  .starInfoText{min-width:0}
+  .starInfoName{font-size:19px;font-weight:750;letter-spacing:.01em}
+  .starInfoMeta{font-size:12px;color:var(--muted);margin-top:2px}
+  .starInfoDesc{font-size:13px;line-height:1.42;margin-top:7px;color:var(--text)}
+  .starInfoClose{align-self:start;border:0;background:transparent;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:2px 5px}
+  @media(max-width:540px){
+    .starinfo{grid-template-columns:66px 1fr auto;padding:12px;gap:10px}
+    .starModel{width:58px;height:58px}.starSphereCanvas{width:54px;height:54px}
+    .starInfoName{font-size:17px}.starInfoDesc{font-size:12px}
+  }
+  @media(max-width:640px){
+    .topbar{grid-template-columns:auto 1fr auto;padding-left:8px;padding-right:8px}
+    .brand span{display:none}
+    .question{max-width:70vw;padding:7px 9px}
+    #choices{grid-template-columns:1fr}
+    .legend{display:none}
+    .modegrid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+
+<div class="startmenu" id="startMenu">
+  <div class="startcard">
+    <div class="starttitle">Constelaciones <span class="app-version">v0.1.0</span></div>
+    <div class="update-banner" id="updateBanner" role="status" aria-live="polite">
+      <button type="button" id="updateNow">
+        <span class="update-idle"><strong>Actualizar</strong><small>v0.1.0</small></span>
+        <span class="update-busy"><strong>Actualizando…</strong></span>
+      </button>
+    </div>
+    <div class="startgrid">
+      <button class="startoption" data-startmode="explore"><b>Explorar</b><span>Navega libremente por el cielo.</span></button>
+      <button class="startoption" data-startmode="learning"><b>Aprendizaje</b><span>Aprende constelaciones por etapas.</span></button>
+      <button class="startoption" data-startmode="locate"><b>Localizar</b><span>Encuentra la constelación que se te pide.</span></button>
+      <button class="startoption" data-startmode="identify"><b>Identificar</b><span>Identifica estrellas o su constelación y revela la respuesta.</span></button>
+      <button class="startoption coming" data-coming-soon="advanced"><b>Avanzado</b><span>Próximamente</span></button>
+      <button class="startoption settings" id="startSettingsBtn"><b>Ajustes</b></button>
+    </div>
+  </div>
+</div>
+
+<div class="topbar" id="topBar" style="display:none">
+  <div class="topspacer"></div>
+  <div class="question" id="questionCard">
+    <div class="qsmall" id="modeLabel">EXPLORAR</div>
+    <div class="qmain" id="prompt"></div>
+    <div class="score" id="score"></div>
+  </div>
+  <div class="topspacer"></div>
+</div>
+
+<div id="choices"></div>
+
+<div class="bottom" id="bottomBar" data-layout="explore" style="display:none">
+  <button class="iconbtn exitbtn" id="modeBtn" aria-label="Salir al menú principal" title="Salir al menú principal">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+        <path d="M7 7l10 10"/><path d="M17 7L7 17"/>
+      </g>
+    </svg>
+  </button>
+  <button class="iconbtn" id="focusBtn" aria-label="Centrar objetivo" title="Centrar objetivo" style="display:none">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-width="2.05" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 19.7s-5.2-5.5-5.2-9.5a5.2 5.2 0 0 1 10.4 0c0 4-5.2 9.5-5.2 9.5z"/>
+        <circle cx="12" cy="10.2" r="2" fill="currentColor" stroke="none"/>
+      </g>
+    </svg>
+  </button>
+  <button class="iconbtn" id="revealBtn" aria-label="Revelar respuesta" title="Revelar respuesta" style="display:none">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2.5 12s3.4-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.4 5.5-9.5 5.5S2.5 12 2.5 12z"/>
+        <circle cx="12" cy="12" r="2.8"/>
+      </g>
+    </svg>
+  </button>
+  <button class="iconbtn" id="orientBtn" title="Orientar el campo según el filtro local activo" aria-label="Orientar">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.15"/>
+      <g transform="rotate(-18 12 12)">
+        <path d="M7.2 17.25 L10.2 9.1 L17.2 5.75 L14.25 13.9 Z" fill="currentColor" stroke="currentColor" stroke-width="1.05" stroke-linejoin="round"/>
+        <circle cx="12" cy="12" r="1.12" fill="var(--bg)" stroke="var(--bg)" stroke-width="0.7"/>
+      </g>
+    </svg>
+  </button>
+  <button class="iconbtn" id="settingsBtn" aria-label="Ajustes" title="Ajustes">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+        <path d="M5 6h14"/>
+        <path d="M5 12h14"/>
+        <path d="M5 18h14"/>
+      </g>
+    </svg>
+  </button>
+  <button class="pill primary" id="nextBtn" style="display:none">Siguiente</button>
+  <div class="status" id="hint" style="display:none"></div>
+</div>
+
+
+<div class="toast" id="toast"></div>
+<div class="identifyanswer" id="identifyAnswer"></div>
+<div class="starinfo" id="starInfoPanel" aria-live="polite">
+  <div class="starModel"><canvas class="starSphereCanvas" id="starInfoSphere" width="96" height="96"></canvas></div>
+  <div class="starInfoText">
+    <div class="starInfoName" id="starInfoName"></div>
+    <div class="starInfoMeta" id="starInfoMeta"></div>
+    <div class="starInfoDesc" id="starInfoDesc"></div>
+  </div>
+  <button class="starInfoClose" id="starInfoClose" aria-label="Cerrar">×</button>
+</div>
+
+<aside class="drawer" id="settings">
+  <button class="iconbtn closex" id="closeSettings">×</button>
+  <h2>Ajustes</h2>
+
+  <h3>Aspecto</h3>
+  <div class="row"><label>Tema</label>
+    <select id="themeMode">
+      <option value="dark" selected>Oscuro</option>
+      <option value="light">Claro</option>
+      <option value="custom">Personalizado</option>
+    </select>
+  </div>
+  <div class="row custom-color-row" id="customBgRow" style="display:none"><label>Fondo personalizado</label><input id="bgColor" type="color" value="#05070d"></div>
+  <div class="row custom-color-row" id="customStarRow" style="display:none"><label>Estrellas personalizadas</label><input id="starColor" type="color" value="#ffffff"></div>
+  <div class="row"><label>Color por tipo espectral</label><input id="spectralColors" type="checkbox"></div>
+  <div class="row"><label>Estilo</label>
+    <select id="starStyle">
+      <option value="mixed">Mixto</option>
+      <option value="circles" selected>Círculos</option>
+      <option value="classic">Clásico por magnitud</option>
+      <option value="icons">Iconos diversos</option>
+    </select>
+  </div>
+  <div class="row"><label>Tamaño</label>
+    <select id="sizeMode">
+      <option value="realistic" selected>Realista</option>
+      <option value="pedagogic">Pedagógico</option>
+      <option value="uniform">Uniforme</option>
+    </select>
+  </div>
+  <div class="row"><label>Visibilidad</label>
+    <select id="visibilityMode">
+      <option value="total">Total</option>
+      <option value="realistic" selected>Realista</option>
+    </select>
+  </div>
+  <div class="row"><label>Titilar</label><input id="starTwinkle" type="checkbox" checked></div>
+  <div class="row"><label>Frecuencia de titilación</label>
+    <div class="rangebox">
+      <input id="twinkleFrequency" type="range" min="0" max="10" step="0.5" value="3">
+      <div class="rangeval"><span id="twinkleFrequencyValue">3</span> / 10</div>
+    </div>
+  </div>
+  <div class="row"><label>Intensidad de titilación</label>
+    <div class="rangebox">
+      <input id="twinkleIntensity" type="range" min="0" max="10" step="0.5" value="10">
+      <div class="rangeval"><span id="twinkleIntensityValue">10</span> / 10</div>
+    </div>
+  </div>
+    <div class="row"><label>Estrellas de fondo</label>
+    <div class="rangebox">
+      <input id="backgroundDensity" type="range" min="0" max="900" step="10" value="900">
+      <div class="rangeval"><span id="densityValue">900</span> estrellas</div>
+    </div>
+  </div>
+  <div class="row"><label>Heterogeneidades del cielo</label><input id="skyHeterogeneity" type="checkbox" checked></div>
+  <div class="row"><label>Visibilidad del fondo</label>
+    <div class="rangebox">
+      <input id="backgroundVisibility" type="range" min="0" max="100" step="1" value="100">
+      <div class="rangeval"><span id="visibilityValue">100</span>% · de tenue a cielo realista</div>
+    </div>
+  </div>
+
+  <h3>Capas</h3>
+  <div class="row"><label>Líneas de figuras</label><input id="showLines" type="checkbox" checked></div>
+<div class="row"><label>Color de líneas</label>
+    <div class="swatchrow" id="linePaletteSwatches">
+      <button class="swatchbtn active" data-linepalette="multi" aria-label="Multicolor" title="Multicolor" style="background:conic-gradient(#9df0ff 0 20%, #ffb3cf 20% 40%, #d5ffa5 40% 60%, #cbb8ff 60% 80%, #ffe59b 80% 100%)"></button>
+      <button class="swatchbtn" data-linepalette="white" aria-label="Blanco" title="Blanco" style="background:#ffffff"></button>
+      <button class="swatchbtn" data-linepalette="tricolor" aria-label="Rojo, azul y blanco" title="Rojo, azul y blanco" style="background:linear-gradient(135deg,#ff5b66 0 33%, #70a8ff 33% 66%, #ffffff 66% 100%)"></button>
+      <button class="swatchbtn" data-linepalette="neon" aria-label="Rosa y azul neón" title="Rosa y azul neón" style="background:linear-gradient(135deg,#ff9cf0 0 50%, #8fd7ff 50% 100%)"></button>
+    </div>
+  </div>
+  <div class="row"><label>Nombres de estrellas</label><input id="showStarNames" type="checkbox"></div>
+  <div class="row"><label>Nombres de constelaciones</label><input id="showConstNames" type="checkbox"></div>
+  <div class="row"><label>Estrellas importantes</label><input id="showImportantStars" type="checkbox"></div>
+  <div class="row"><label>Nombres de estrellas importantes</label><input id="showImportantStarNames" type="checkbox"></div>
+  <div class="row"><label>Mostrar nombre con</label>
+    <select id="manualConstLabelTrigger">
+      <option value="double" selected>Doble clic / toque</option>
+      <option value="single">Un toque</option>
+    </select>
+  </div>
+  <div class="row"><label>Nombre de constelación</label>
+    <select id="manualConstLabelMode">
+      <option value="keep" selected>Mantener</option>
+      <option value="fade">Desvanecer</option>
+    </select>
+  </div>
+  <div class="row"><label>Idioma de constelaciones</label>
+    <select id="constellationLanguage">
+      <option value="es" selected>Español</option>
+      <option value="la">Latín</option>
+    </select>
+  </div>
+  <div class="row"><label>Ecuador celeste</label><input id="showEquator" type="checkbox"></div>
+  <div class="row"><label>Eclíptica</label><input id="showEcliptic" type="checkbox"></div>
+  <div class="row"><label>Retícula cartográfica</label><input id="showGrid" type="checkbox" checked></div>
+  <div class="row"><label>Grosor de retícula</label>
+    <div class="rangebox">
+      <input id="gridThickness" type="range" min="0.5" max="4" step="0.25" value="2">
+      <div class="rangeval"><span id="gridThicknessValue">2</span> px</div>
+    </div>
+  </div>
+
+  <h3>Navegación</h3>
+  <div class="row"><label>Limitar zoom out (sin distorsión)</label><input id="limitZoomOut" type="checkbox" checked></div>
+
+  <h3>Cielo visible</h3>
+  <div class="row"><label>Filtro</label>
+    <select id="skyFilter">
+      <option value="all" selected>Todo el cielo</option>
+      <option value="arasSep25_22_00">Aras de los Olmos · 25 sep · 22:00–00:00</option>
+      <option value="valenciaToday_22_00">Valencia · hoy · 22:00–00:00</option>
+    </select>
+  </div>
+  <p class="help">Los filtros locales solo muestran una constelación si toda su figura cabe simultáneamente por encima de 8° de altura en algún instante de la franja elegida. Si activas «Visibilidad · Realista», además atenúan de forma distinta las estrellas según magnitud, altura y calidad del cielo del lugar.</p>
+
+  <h3>Juego</h3>
+  <div class="row"><label>Rondas</label>
+    <select id="roundCount"><option>5</option><option selected>10</option><option>20</option></select>
+  </div>
+  <div class="row"><label>Identificar · preguntas</label>
+    <select id="identifyQuestionMode">
+      <option value="both" selected>Constelaciones y estrellas</option>
+      <option value="constellation">Solo constelaciones</option>
+      <option value="star">Solo estrellas</option>
+    </select>
+  </div>
+  <div class="row"><label>Mostrar líneas al jugar</label><input id="gameLines" type="checkbox"></div>
+  <div class="row"><label>Aprendizaje · mantener acertadas en color</label><input id="learningKeepColors" type="checkbox" checked></div>
+  <div class="row"><label>Aprendizaje · ayuda visual</label>
+    <select id="learningCueMode">
+      <option value="none">Nada</option>
+      <option value="pulse">Nuevas · brillo pulsátil</option>
+      <option value="thick" selected>Identificadas · líneas 2,5×</option>
+    </select>
+  </div>
+
+  <h3>Prototipo</h3>
+  <p class="help">
+    Las 88 constelaciones y las estrellas de sus trazados están incluidas dentro de este archivo y funcionan sin conexión.
+    No necesita descargar datos astronómicos para mostrar el mapa completo. El color espectral usa clases
+    O–B–A–F–G–K–M aproximadas: representa sobre todo temperatura, no si la estrella es enana, gigante o supergigante.
+    La retícula cartográfica opcional muestra meridianos de ascensión recta y paralelos de declinación.
+  </p>
+</aside>
+
+<aside class="drawer" id="modes" style="display:none">
+  <button class="iconbtn closex" id="closeModes">×</button>
+</aside>
+
+<script>
+(() => {
+'use strict';
+
+const canvas = document.getElementById('sky');
+const ctx = canvas.getContext('2d', {alpha:false});
+const els = {
+  prompt:document.getElementById('prompt'), modeLabel:document.getElementById('modeLabel'),
+  score:document.getElementById('score'), hint:document.getElementById('hint'),
+  settings:document.getElementById('settings'), modes:document.getElementById('modes'),
+  topBar:document.getElementById('topBar'), questionCard:document.getElementById('questionCard'),
+  startMenu:document.getElementById('startMenu'), startSettingsBtn:document.getElementById('startSettingsBtn'),
+  bottomBar:document.getElementById('bottomBar'), focusBtn:document.getElementById('focusBtn'), revealBtn:document.getElementById('revealBtn'),
+  settingsBtn:document.getElementById('settingsBtn'), closeSettings:document.getElementById('closeSettings'),
+  modeBtn:document.getElementById('modeBtn'), closeModes:document.getElementById('closeModes'),
+  resetBtn:document.getElementById('resetBtn'), orientBtn:document.getElementById('orientBtn'), nextBtn:document.getElementById('nextBtn'),
+  choices:document.getElementById('choices'), toast:document.getElementById('toast'), identifyAnswer:document.getElementById('identifyAnswer'),
+  themeMode:document.getElementById('themeMode'),
+  customBgRow:document.getElementById('customBgRow'), customStarRow:document.getElementById('customStarRow'),
+  bgColor:document.getElementById('bgColor'), starColor:document.getElementById('starColor'),
+  spectralColors:document.getElementById('spectralColors'),
+  starStyle:document.getElementById('starStyle'), sizeMode:document.getElementById('sizeMode'),
+  visibilityMode:document.getElementById('visibilityMode'),
+  starTwinkle:document.getElementById('starTwinkle'),
+  twinkleFrequency:document.getElementById('twinkleFrequency'), twinkleFrequencyValue:document.getElementById('twinkleFrequencyValue'),
+  twinkleIntensity:document.getElementById('twinkleIntensity'), twinkleIntensityValue:document.getElementById('twinkleIntensityValue'),
+  backgroundDensity:document.getElementById('backgroundDensity'),
+  skyHeterogeneity:document.getElementById('skyHeterogeneity'),
+  backgroundVisibility:document.getElementById('backgroundVisibility'),
+  densityValue:document.getElementById('densityValue'), visibilityValue:document.getElementById('visibilityValue'),
+  gridThickness:document.getElementById('gridThickness'), gridThicknessValue:document.getElementById('gridThicknessValue'),
+  showLines:document.getElementById('showLines'),
+  showStarNames:document.getElementById('showStarNames'), showConstNames:document.getElementById('showConstNames'),
+  showImportantStars:document.getElementById('showImportantStars'),
+  showImportantStarNames:document.getElementById('showImportantStarNames'),
+  manualConstLabelTrigger:document.getElementById('manualConstLabelTrigger'),
+  manualConstLabelMode:document.getElementById('manualConstLabelMode'),
+  starInfoPanel:document.getElementById('starInfoPanel'), starInfoSphere:document.getElementById('starInfoSphere'),
+  starInfoName:document.getElementById('starInfoName'), starInfoMeta:document.getElementById('starInfoMeta'),
+  starInfoDesc:document.getElementById('starInfoDesc'), starInfoClose:document.getElementById('starInfoClose'),
+  constellationLanguage:document.getElementById('constellationLanguage'),
+  skyFilter:document.getElementById('skyFilter'),
+  showEquator:document.getElementById('showEquator'), showEcliptic:document.getElementById('showEcliptic'),
+  showGrid:document.getElementById('showGrid'),
+  limitZoomOut:document.getElementById('limitZoomOut'),
+  roundCount:document.getElementById('roundCount'),
+  identifyQuestionMode:document.getElementById('identifyQuestionMode'),
+  gameLines:document.getElementById('gameLines'),
+  learningKeepColors:document.getElementById('learningKeepColors'),
+  learningCueMode:document.getElementById('learningCueMode')
+};
+const linePaletteButtons=[...document.querySelectorAll('[data-linepalette]')];
+let startupMenuOpen=true;
+let appStarted=false;
+let returnToMainMenuAfterSettings=false;
+let lastRenderT=0;
+let linePalette='multi';
+function updateLinePaletteUI(){
+  linePaletteButtons.forEach(b=>b.classList.toggle('active',b.dataset.linepalette===linePalette));
+}
+function paletteIndex(key,count){
+  let h=0;
+  for(const ch of String(key||'')) h=((h<<5)-h)+ch.charCodeAt(0);
+  return Math.abs(h)%count;
+}
+function lineColorForConstellation(c){
+  if(linePalette==='white') return '#ffffff';
+  if(linePalette==='tricolor'){
+    const colors=['#ff5b66','#70a8ff','#ffffff'];
+    return colors[paletteIndex(c.id||c.label||'',colors.length)];
+  }
+  if(linePalette==='neon'){
+    const colors=['#ff9cf0','#8fd7ff'];
+    return colors[paletteIndex(c.id||c.label||'',colors.length)];
+  }
+  return c.color || '#ffffff';
+}
+
+const C = {
+  Orion: {label:'Orión', color:'#9dbfff'},
+  UrsaMajor: {label:'Osa Mayor', color:'#c7b6ff'},
+  Cassiopeia: {label:'Casiopea', color:'#ffd49c'},
+  Cygnus: {label:'Cisne', color:'#a7f0ff'},
+  Scorpius: {label:'Escorpio', color:'#ff9aa2'},
+  Leo: {label:'Leo', color:'#ffe08f'},
+  Crux: {label:'Cruz del Sur', color:'#b7ffcf'},
+  Sagittarius: {label:'Sagitario', color:'#ffb3e1'}
+};
+
+const EMBEDDED_CONSTELLATIONS = [["And",1,[[2.06499,42.3297,2.1,1.37],[1.1622,35.6206,2.07,1.576],[0.65547,30.861,3.27,1.268],[0.13979,29.0904,2.07,-0.038],[0.95345,23.4176,4.4,0.94],[0.78898,24.2672,4.08,1.1],[0.64259,29.3118,4.34,0.871],[0.61468,33.7193,4.34,0.871],[23.63561,43.2681,4.29,-0.083],[23.03202,42.326,3.62,-0.099],[23.67347,44.3339,4.15,-0.071],[23.62607,46.4582,3.81,0.984],[0.94589,38.4993,3.86,0.13],[0.83023,41.0789,4.53,-0.136],[1.15837,47.2418,4.26,0.012],[1.63321,48.6282,3.59,1.275],[23.76723,46.4203,4.97,1.086]],[[0,1,2,3],[4,5,6,2,7,8,9],[8,10,11],[1,12,13,14,15],[10,16]]],["Ant",3,[[9.48742,-35.9513,4.51,1.408],[10.45253,-31.0678,4.28,1.429],[10.94529,-37.1378,4.6,1.006]],[[0,1,2]]],["Aps",3,[[14.7977,-79.0448,3.83,1.433],[16.33911,-78.6957,4.68,1.68],[16.71796,-77.5174,4.23,1.06],[16.55752,-78.8971,3.86,0.923]],[[0,1,2,3]]],["Aqr",2,[[20.7946,-9.4958,3.78,0],[20.87757,-8.9833,4.73,0.325],[21.52598,-5.5712,2.9,0.828],[22.0964,-0.3199,2.95,0.969],[22.36094,-1.3873,3.86,-0.057],[22.48053,-0.02,3.65,0.406],[22.58927,-0.1175,4.04,-0.083],[22.87691,-7.5796,3.73,1.626],[23.29839,-9.1825,4.41,-0.144],[23.15745,-21.1724,3.68,1.202],[22.10729,-13.8697,4.29,-0.075],[22.28057,-7.7833,4.17,0.979],[22.42129,1.3774,4.8,-0.171],[23.38284,-20.1006,3.96,1.082],[23.69606,-17.8165,4.82,0.822]],[[0,1,2,3,4,5,6,7,8,9],[2,10],[3,11],[5,12],[13,8,14]]],["Aql",1,[[19.77099,10.6133,2.72,1.507],[19.84639,8.8683,0.76,0.221],[19.92189,6.4068,3.71,0.855],[20.18841,-0.8215,3.24,-0.066],[19.87455,1.0057,3.87,0.63],[19.42497,3.1148,3.36,0.319],[19.09017,13.8635,2.99,0.014],[19.10415,-4.8826,3.43,-0.096]],[[0,1,2,3,4,5,6,1,5,7]]],["Ara",3,[[17.42324,-56.3777,3.31,-0.15],[17.51831,-60.6838,3.6,-0.104],[16.82977,-59.0414,3.77,1.562],[16.977,-55.9901,3.12,1.552],[16.99307,-53.1604,4.06,1.452],[17.53069,-49.8761,2.84,-0.136],[17.42167,-55.5299,2.84,1.479]],[[0,1,2,3,4,5,6]]],["Ari",1,[[2.83307,27.2605,3.61,-0.1],[2.11956,23.4624,2.01,1.151],[1.91067,20.808,2.64,0.165],[1.89217,19.2939,3.88,-0.047]],[[0,1,2,3]]],["Aur",1,[[5.99215,44.9474,1.9,0.077],[5.27815,45.998,0.08,0.795],[5.10858,41.2345,3.18,-0.148],[4.94989,33.1661,2.69,1.49],[5.4382,28.6075,1.65,-0.13],[5.99535,37.2126,2.65,-0.083],[5.99212,54.2847,3.72,1.01],[5.03281,43.8233,3.03,0.537],[5.0413,41.0758,3.69,1.154]],[[0,1,2,3,4,5,0,6,1,7,8]]],["Boo",1,[[13.78771,17.4569,4.5,0.508],[13.91141,18.3977,2.68,0.58],[14.26102,19.1824,-0.05,1.239],[14.5305,30.3714,3.57,1.298],[14.53463,38.3083,3.04,0.191],[15.03243,40.3906,3.49,0.956],[15.25838,33.3148,3.46,0.961],[14.74978,27.0742,2.35,0.966],[14.68582,13.7283,3.78,0.044],[14.27306,46.0883,4.18,0.087],[14.22439,51.7879,4.8,null],[14.41995,51.8507,4.04,0.497]],[[0,1,2,3,4,5,6,7,2,8],[4,9,10,11,9]]],["Cae",3,[[4.51391,-44.9537,5.07,-0.194],[4.67603,-41.8638,4.44,0.342],[4.70097,-37.1443,5.04,0.391],[5.07345,-35.483,4.55,1.177]],[[0,1,2,3]]],["Cam",2,[[4.95478,53.7521,4.43,-0.017],[5.05697,60.4422,4.03,0.921],[4.90083,66.3427,4.26,-0.008],[3.83931,71.3323,4.59,0.064],[3.82535,65.526,4.39,1.87],[3.48448,59.9403,4.21,0.419],[6.31411,69.3198,4.76,0.025],[7.00112,76.9774,4.55,1.365]],[[0,1,2,3,4,5],[2,6,7]]],["Cnc",2,[[8.97479,11.8577,4.26,0.141],[8.74475,18.1543,3.94,1.083],[8.72143,21.4685,4.66,0.01],[8.77777,28.7651,4.8,null],[8.27525,9.1855,3.53,1.481]],[[0,1,2,3],[1,4]]],["CVn",2,[[12.93346,38.3149,5.61,0.337],[12.56237,41.3575,4.24,0.588]],[[0,1]]],["CMa",1,[[6.37833,-17.9559,1.98,-0.24],[6.75248,-16.7161,-1.44,0.009],[7.05041,-23.8333,3.02,-0.077],[7.13986,-26.3932,1.83,0.671],[7.02865,-27.9348,3.49,1.729],[6.9771,-28.9721,1.5,-0.211],[6.33855,-30.0634,3.02,-0.16],[7.40159,-29.3031,2.45,-0.083],[6.93562,-17.0542,4.36,-0.063],[7.06264,-15.6333,4.11,-0.112],[6.90317,-12.0386,4.08,1.418]],[[0,1,2,3,4,5,6],[7,3],[1,8,9,10,8]]],["CMi",2,[[7.65503,5.225,0.4,0.432],[7.45251,8.2893,2.89,-0.097]],[[0,1]]],["Cap",2,[[20.29413,-12.5082,4.3,0.928],[20.35019,-14.7814,3.05,0.79],[20.48101,-17.8137,4.77,0.386],[20.76826,-25.2709,4.13,0.426],[20.86369,-26.9191,4.12,1.633],[21.44445,-22.4113,3.77,1.002],[21.78401,-16.1273,2.85,0.18],[21.66818,-16.6623,3.69,0.32],[21.37078,-16.8345,4.28,0.888],[21.09912,-17.2329,4.08,-0.01]],[[0,1,2,3,4,5,6,7,8,9,0]]],["Car",1,[[6.62935,-43.1959,3.17,-0.103],[6.3992,-52.6957,-0.62,0.164],[9.21999,-69.7172,1.67,0.07],[10.22895,-70.0379,3.29,-0.074],[10.71595,-64.3945,2.74,-0.22],[10.53374,-61.6853,3.3,-0.089],[10.28471,-61.3323,3.39,1.541],[9.28483,-59.2752,2.21,0.189],[8.37523,-59.5095,1.86,1.196],[7.94631,-52.9824,3.46,-0.177],[8.15887,-47.3366,1.75,-0.145],[8.74506,-54.7088,1.93,0.043],[11.10901,-62.4241,4.62,0.988],[11.14278,-61.9472,5.11,0.195],[11.21001,-60.3176,4.59,0.541],[11.14317,-58.975,3.93,1.225],[10.89157,-58.8532,3.78,0.945]],[[0,1,2,3,4,5,6,7,8,9,10,11,7],[4,12,13,14,15,16,5]]],["Cas",1,[[1.90659,63.6701,3.35,-0.15],[1.43027,60.2353,2.66,0.16],[0.94515,60.7167,2.15,-0.046],[0.67512,56.5373,2.24,1.17],[0.15297,59.1498,2.28,0.38]],[[0,1,2,3,4]]],["Cen",1,[[11.35011,-54.491,3.9,-0.157],[12.13931,-50.7224,2.58,-0.128],[12.46733,-50.2306,3.91,-0.192],[12.69195,-48.9599,2.2,-0.023],[13.66479,-53.4664,2.29,-0.171],[13.92566,-47.2884,2.55,-0.176],[13.82694,-42.4737,3.47,-0.17],[13.82508,-41.6877,3.41,-0.225],[14.11137,-36.37,2.06,1.011],[14.59179,-42.1578,2.33,-0.157],[14.98603,-42.1042,3.13,-0.208],[13.34328,-36.7123,2.75,0.068],[14.65975,-60.8372,1.35,0.9],[14.06373,-60.373,0.61,-0.231],[12.1942,-52.3685,3.97,-0.156],[11.52947,-59.4421,5.07,1.026]],[[0,1,2,3,4,5,6,7,8,9,10],[7,11],[12,4,13],[2,14,15]]],["Cep",2,[[20.49303,62.9941,4.21,0.199],[20.75483,61.8388,3.41,0.912],[21.30966,62.5856,2.45,0.257],[21.72513,58.78,4.23,2.242],[22.25061,57.0436,4.18,0.278],[22.18091,58.2013,3.39,1.558],[22.48619,58.4152,4.07,0.778],[22.82801,66.2004,3.5,1.053],[23.65579,77.6323,3.21,1.031],[21.47767,70.5607,3.23,-0.201]],[[0,1,2,3,4,5,6,7,8,9,2],[9,7]]],["Cet",1,[[2.72168,3.2358,3.47,0.093],[2.59791,5.5932,4.87,0.88],[2.46932,8.4601,4.3,-0.053],[2.74904,10.1141,4.27,0.311],[2.99525,8.9074,4.71,-0.109],[3.03799,4.0897,2.54,1.63],[2.65805,0.3285,4.08,-0.212],[2.32244,-2.9776,4.8,null],[1.85767,-10.335,3.74,1.136],[1.73447,-15.9375,3.49,0.727],[0.72649,-17.9866,2.04,1.019],[0.3238,-8.8239,3.56,1.214],[1.14317,-10.1823,3.46,1.161],[1.40039,-8.1833,3.6,1.065]],[[0,1,2,3,4,5,0,6,7,8,9,10,11,12,13,8]]],["Cha",3,[[8.30877,-76.9197,4.05,0.413],[10.59114,-78.6078,4.11,1.58],[10.75453,-80.4696,5.46,0.957],[12.30579,-79.3122,4.24,-0.123],[11.99377,-78.2218,4.88,-0.054]],[[0,1,2,3,4,1]]],["Cir",3,[[15.2919,-58.8012,4.07,0.088],[14.70845,-64.9751,3.18,0.256],[15.38963,-59.3208,4.48,0.169]],[[0,1,2]]],["Col",3,[[6.36857,-33.4364,3.85,0.858],[5.84933,-35.7683,3.12,1.146],[5.66081,-34.0741,2.65,-0.12],[5.52021,-35.4705,3.86,1.13],[5.98578,-42.8151,3.96,1.146]],[[0,1,2,3],[1,4]]],["Com",3,[[13.16647,17.5294,4.32,0.455],[13.19789,27.8782,4.23,0.572],[12.44897,28.2684,4.35,1.128]],[[0,1,2]]],["CrA",3,[[18.97871,-37.1074,4.83,0.396],[19.10697,-37.0634,4.23,0.523],[19.15787,-37.9045,4.11,0.042],[19.16715,-39.3408,4.1,1.163],[19.13916,-40.4967,4.57,1.07],[19.05191,-42.0951,4.74,-0.027],[18.82639,-43.4341,5.6,-0.077],[18.55839,-42.3125,4.62,0.994]],[[0,1,2,3,4,5,6,7]]],["CrB",2,[[15.54883,31.3591,4.14,-0.127],[15.46381,29.1057,3.66,0.319],[15.57813,26.7147,2.22,0.032],[15.71238,26.2956,3.81,0.02],[15.82657,26.0684,4.59,0.794],[15.95979,26.8779,4.14,1.231],[16.02405,29.8511,4.98,-0.05]],[[0,1,2,3,4,5,6]]],["Crv",3,[[12.14023,-24.7289,4.02,0.334],[12.16875,-22.6198,3.02,1.326],[12.26343,-17.5419,2.58,-0.107],[12.49774,-16.5154,2.94,-0.012],[12.57312,-23.3968,2.65,0.893]],[[0,1,2,3,4,1]]],["Crt",3,[[11.61137,-9.8022,4.7,-0.073],[11.41017,-10.8593,4.81,1.556],[11.32235,-14.7785,3.56,1.112],[10.99624,-18.2988,4.08,1.079],[11.1943,-22.8258,4.46,0.025],[11.38941,-18.78,5.08,0.439],[11.4147,-17.684,4.06,0.216],[11.74605,-18.3507,4.71,0.958],[11.9336,-17.1508,5.17,-0.022]],[[0,1,2,3,4,5,6,7,8],[2,6]]],["Cru",2,[[12.79535,-59.6888,1.25,-0.238],[12.25242,-58.7489,2.79,-0.193],[12.44331,-63.0991,0.77,-0.243],[12.51943,-57.1132,1.59,1.6]],[[0,1],[2,3]]],["Cyg",1,[[21.21561,30.2269,3.21,0.99],[20.77019,33.9703,2.48,1.021],[20.37047,40.2567,2.23,0.673],[19.74958,45.1308,2.86,-0.002],[19.4951,51.7298,3.76,0.148],[19.28505,53.3685,3.8,0.95],[20.69053,45.2803,1.25,0.092],[19.93843,35.0834,3.89,1.019],[19.51202,27.9597,3.05,1.088]],[[0,1,2,3,4,5],[6,2,7,8]]],["Del",3,[[20.55355,11.3033,4.03,-0.123],[20.62582,14.5951,3.64,0.425],[20.66063,15.9121,3.77,-0.057],[20.77746,16.1241,5.15,0.495],[20.72431,15.0746,4.43,0.302]],[[0,1,2,3,4,1]]],["Dor",3,[[4.26711,-51.4866,4.26,0.312],[4.56661,-55.045,3.3,-0.079],[5.56042,-62.4898,3.76,0.64],[5.74621,-65.7355,4.34,0.217],[5.90168,-63.0896,4.65,1.022],[5.09185,-57.4727,4.71,0.526]],[[0,1,2,3,4,2,5,1]]],["Dra",2,[[17.89215,56.8726,3.73,1.177],[17.94343,51.4889,2.24,1.521],[17.50721,52.3014,2.79,0.954],[17.53779,55.173,4.86,0.279],[19.20925,67.6615,3.07,0.99],[18.34595,71.3378,4.22,-0.093],[17.14644,65.7147,3.17,-0.12],[16.39986,61.5142,2.73,0.91],[16.03149,58.5653,4.01,0.528],[15.41549,58.9661,3.29,1.166],[14.07315,64.3759,3.67,-0.049],[12.55804,69.7882,3.85,-0.116],[11.52339,69.3311,3.82,1.613],[18.35094,72.7328,3.55,0.489],[19.80287,70.2679,3.84,0.888]],[[0,1,2,3,0,4,5,6,7,8,9,10,11,12],[5,13],[4,14]]],["Equ",3,[[21.26373,5.2478,3.92,0.549],[21.24134,10.007,4.47,0.529],[21.17236,10.1316,4.7,0.262]],[[0,1,2]]],["Eri",1,[[5.13083,-5.0864,2.78,0.161],[4.75837,-3.2547,4.01,-0.148],[4.60532,-3.3525,3.93,-0.21],[4.19776,-6.8376,4.04,0.327],[3.96716,-13.5085,2.97,1.588],[3.76904,-12.1016,4.43,1.604],[3.72081,-9.7634,3.52,0.915],[3.54885,-9.4583,3.72,0.881],[2.94046,-8.8981,3.89,1.088],[2.73537,-13.8587,4.24,-0.122],[2.75172,-18.5726,4.47,0.481],[3.03986,-23.6245,4.08,0.163],[3.32528,-21.7579,3.7,1.614],[3.56313,-21.6329,4.26,-0.106],[3.7808,-23.2497,4.22,0.434],[4.59251,-30.5623,3.81,0.957],[4.40061,-34.0168,3.97,1.468],[4.29824,-33.7983,3.55,-0.108],[3.82423,-36.2003,4.17,0.927],[3.61825,-40.2745,4.57,1.023],[3.33213,-43.0698,4.26,0.711],[2.97102,-40.3047,2.88,0.128],[2.67779,-39.8554,4.11,1.006],[2.44975,-47.7038,4.24,-0.136],[2.27516,-51.5122,3.56,-0.12],[1.93263,-51.6089,3.69,0.844],[1.62857,-57.2368,0.45,-0.158]],[[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]]],["For",3,[[3.20126,-28.9876,3.8,0.543],[2.81817,-32.4059,4.45,0.981],[2.07485,-29.2968,4.68,-0.156]],[[0,1,2]]],["Gem",1,[[6.24796,22.5068,3.31,1.6],[6.38267,22.5136,2.87,1.621],[6.7322,25.1311,3.06,1.377],[7.18566,30.2452,4.41,1.261],[7.57663,31.8883,1.58,0.034],[7.75527,28.0262,1.16,0.991],[7.59871,26.8957,4.06,1.54],[7.33538,21.9823,3.5,0.374],[7.06848,20.5703,4.01,0.899],[6.62853,16.3993,1.93,0.001],[6.75483,12.8956,3.35,0.443],[7.30155,16.5404,3.58,0.106]],[[0,1,2,3,4,5,6,7,8,9,10],[7,11]]],["Gru",3,[[23.01467,-52.7541,4.11,0.96],[22.80925,-51.3169,3.49,0.083],[22.71113,-46.8846,2.07,1.61],[22.49595,-43.7492,4.12,1.57],[22.13722,-46.961,1.73,-0.07],[22.48783,-43.4956,3.97,1.022],[22.26025,-41.3467,4.79,0.79],[22.10191,-39.5434,4.47,1.349],[21.89881,-37.3649,3,-0.084]],[[0,1,2,3,4,2],[5,6,7,8]]],["Her",2,[[16.36534,19.1531,3.74,0.299],[16.50367,21.4896,2.78,0.947],[16.6881,31.6027,2.81,0.65],[16.71493,38.9223,3.48,0.916],[16.56839,42.437,4.2,-0.013],[16.32901,46.3134,3.91,-0.151],[16.14616,44.9349,4.23,-0.045],[15.87793,42.4515,4.6,0.563],[17.00483,30.9264,3.92,-0.018],[17.25079,36.8092,3.16,1.437],[17.93755,37.2505,3.86,1.35],[17.39471,37.1459,4.15,-0.011],[17.25053,24.8392,3.12,0.08],[17.77431,27.7207,3.42,0.75],[17.96275,29.2479,3.7,0.935],[18.12571,28.7625,3.84,-0.018],[17.24413,14.3903,2.78,1.164]],[[0,1,2,3,4,5,6,7],[2,8],[3,9],[10,11,9,8,12,13,14,15],[16,1]]],["Hor",3,[[4.23337,-42.2944,3.85,1.085],[2.70929,-50.8003,5.4,0.561],[2.62343,-52.5431,5.3,0.289],[2.67767,-54.5499,5.21,0.411],[3.06023,-59.7378,5.12,0.349],[2.97995,-64.0713,4.98,0.126]],[[0,1,2,3,4,5]]],["Hya",2,[[8.77959,6.4188,3.38,0.685],[8.80721,5.8378,4.35,-0.044],[8.72041,3.3987,4.3,-0.192],[8.64595,3.3414,4.45,1.216],[8.6276,5.7038,4.14,0.003],[8.92323,5.9456,3.11,0.978],[9.23941,2.3143,3.89,-0.06],[9.66427,-1.1428,3.9,1.313],[9.45979,-8.6586,1.99,1.44],[9.85797,-14.8466,4.11,0.918],[10.17647,-12.3541,3.61,1.007],[10.43484,-16.8363,3.83,1.456],[10.82708,-16.1936,3.11,1.232],[11.55003,-31.8576,3.54,0.947],[11.88181,-33.9081,4.29,-0.1],[13.31536,-23.1715,2.99,0.92],[14.10619,-26.6824,3.25,1.091],[14.83814,-27.9604,4.42,1.366]],[[0,1,2,3,4,0,5,6,7,8,9,10,11,12,13,14,15,16,17]]],["Hyi",3,[[0.42919,-77.2542,2.82,0.618],[3.78732,-74.239,3.26,1.59],[2.65982,-68.2669,4.12,-0.061],[2.36249,-68.6594,4.08,0.034],[1.91559,-67.6473,4.68,0.931],[1.9795,-61.5699,2.86,0.29]],[[0,1,2,3,4,5]]],["Ind",3,[[20.62612,-47.2915,3.11,0.998],[20.73398,-51.921,4.51,0.278],[20.9135,-58.4542,3.67,1.25],[21.9653,-54.9926,4.4,0.297],[21.33111,-53.4494,4.39,0.191]],[[0,1,2,3,4,0]]],["Lac",3,[[22.39267,52.229,4.42,1.015],[22.52153,50.2825,3.76,0.031],[22.49217,47.7069,4.34,1.679],[22.35043,46.5366,4.55,-0.1],[22.50813,43.1234,4.52,-0.086],[22.67524,44.2763,4.5,1.318],[22.40861,49.4764,4.55,0.092],[22.23131,39.7149,4.5,1.385],[22.26616,37.7487,4.14,1.447]],[[0,1,2,3,4,5,2,6,0],[4,7,8]]],["Leo",1,[[10.13953,11.9672,1.36,-0.087],[10.12221,16.7627,3.48,-0.031],[10.33287,19.8415,2.01,1.128],[11.23514,20.5237,2.56,0.128],[11.81766,14.5721,2.14,0.09],[11.23733,15.4296,3.33,-0.003],[10.27817,23.4173,3.43,0.307],[9.87939,26.007,3.88,1.222],[9.76419,23.7743,2.97,0.808]],[[0,1,2,3,4,5,0],[2,6,7,8]]],["LMi",3,[[10.12382,35.2447,4.49,0.19],[10.43189,33.7961,4.72,0.26],[10.88853,34.2149,3.79,1.04],[10.46472,36.7072,4.2,0.908],[9.57039,36.3976,4.54,0.914]],[[0,1,2,3,0,4]]],["Lep",3,[[6.10259,-14.9353,4.67,0.046],[5.94008,-14.1677,3.71,0.337],[5.78259,-14.822,3.55,0.104],[5.54551,-17.8223,2.58,0.211],[5.21553,-16.2055,3.29,-0.11],[5.09102,-22.371,3.19,1.46],[5.47075,-20.7594,2.81,0.807],[5.74105,-22.4484,3.59,0.481],[5.85536,-20.8791,3.76,0.984],[5.22052,-12.9413,4.36,-0.094],[5.32626,-13.1768,4.29,-0.235]],[[0,1,2,3,4,5,6,7,8],[9,4,10]]],["Lib",2,[[15.06784,-25.282,3.25,1.674],[14.84797,-16.0418,2.75,0.147],[15.28345,-9.3829,2.61,-0.071],[15.59211,-14.7895,3.91,1.007],[15.61707,-28.1351,3.6,1.361],[15.64427,-29.7778,3.66,-0.177]],[[0,1,2,3,4,5],[1,3]]],["Lup",3,[[15.84931,-33.6272,3.97,-0.045],[15.66277,-34.4119,4.66,0.964],[15.36343,-36.2614,3.57,1.534],[15.3562,-40.6475,3.22,-0.227],[14.97553,-43.134,2.68,-0.184],[14.69882,-47.3882,2.3,-0.154],[15.20475,-52.0992,3.41,0.918],[15.30889,-47.8753,4.27,-0.086],[15.37802,-44.6896,3.37,-0.191],[15.58568,-41.1668,2.8,-0.216],[16.00203,-38.3967,3.42,-0.206],[16.10987,-36.8023,4.22,-0.184]],[[0,1,2,3,4,5,6,7,8,9,10,11],[3,9]]],["Lyn",3,[[6.32705,59.011,4.44,0.032],[6.95461,58.4228,4.35,0.85],[7.44523,49.2115,4.61,-0.001],[8.38059,43.1881,4.25,1.55],[9.01066,41.7829,3.96,0.463],[9.31407,36.8026,3.82,0.066],[9.35092,34.3926,3.14,1.55]],[[0,1,2,3,4,5,6]]],["Lyr",2,[[18.74621,37.6051,4.34,0.192],[18.73966,39.6127,4.59,0.18],[18.61565,38.7837,0.03,-0.001],[18.90841,36.8986,4.22,1.575],[18.98239,32.6896,3.25,-0.049],[18.83467,33.3627,3.52,0.003]],[[0,1,2,0,3,4,5,0]]],["Men",3,[[6.17069,-74.753,5.08,0.714],[5.53139,-76.341,5.18,1.13],[4.91978,-74.9369,5.47,1.518],[5.04528,-71.3143,5.3,0.996]],[[0,1,2,3]]],["Mic",3,[[20.8328,-33.7797,4.89,1.004],[20.80809,-43.9885,5.11,0.361],[21.34601,-40.8095,4.8,0.029],[21.29897,-32.1725,4.71,0.07],[21.02152,-32.2578,4.67,0.89]],[[0,1,2,3,4,0]]],["Mon",2,[[7.68745,-9.5511,3.94,1.022],[8.14323,-2.9838,4.36,0.97],[7.19774,-0.4928,4.15,-0.005],[6.4803,-7.0331,3.76,-0.113],[6.24759,-6.2748,3.99,1.319],[6.79768,2.4122,4.48,1.099],[6.39613,4.5929,4.39,0.215],[6.54839,7.333,4.47,0.023],[6.68296,9.8958,4.66,-0.233]],[[0,1,2,3,4],[2,5,6,7,8]]],["Mus",3,[[11.76011,-66.7288,3.63,0.16],[12.29285,-67.9607,4.06,1.603],[12.61973,-69.1356,2.69,-0.176],[12.77133,-68.1081,3.04,-0.178],[13.03785,-71.5489,3.61,1.19],[12.54111,-72.133,3.84,-0.157]],[[0,1,2,3,4,5,2]]],["Nor",3,[[16.10818,-45.1732,4.73,0.23],[16.45307,-47.5548,4.46,-0.07],[16.33067,-50.1555,4.01,1.08],[16.05358,-49.2297,4.65,0.902]],[[0,1,2,3,0]]],["Oct",3,[[14.44867,-83.6679,4.31,1.3],[22.76764,-81.3816,4.13,0.208],[21.69129,-77.39,3.73,1.008]],[[0,1,2,0]]],["Oph",2,[[17.98377,-9.7736,3.32,0.987],[17.79821,2.7073,3.75,0.043],[17.72454,4.5673,2.76,1.168],[17.58224,12.56,2.08,0.155],[16.96114,9.375,3.19,1.16],[16.51523,1.9839,3.82,0.022],[16.23909,-3.6943,2.73,1.584],[16.30536,-4.6925,3.23,0.966],[16.61931,-10.5671,2.54,0.038],[17.17297,-15.7249,2.43,0.059],[16.51899,-16.6127,4.29,0.924],[16.4504,-18.4563,4.22,0.217],[16.40172,-20.0373,4.48,0.996],[16.42642,-23.4472,4.57,0.227],[17.36683,-24.9995,3.27,-0.186],[17.45591,-29.867,4.28,0.402]],[[0,1,2,3,4,5,6,7,8,9],[4,8,10,11,12,13],[2,9,14,15]]],["Ori",1,[[6.1262,14.7685,4.42,-0.164],[5.90639,20.2762,4.39,0.594],[6.06533,20.1385,4.64,0.236],[6.199,14.2088,4.45,-0.18],[6.03972,9.6473,4.12,0.17],[5.91953,7.4071,0.45,1.5],[5.41885,6.3497,1.64,-0.224],[4.91493,10.1508,4.64,0.085],[4.97581,1.714,4.47,1.369],[4.90419,2.4407,3.71,-0.179],[4.85343,5.6051,3.68,-0.157],[4.83067,6.9613,3.19,0.484],[4.84353,8.9002,4.35,0.01],[4.93952,13.5145,4.06,1.158],[5.07615,15.4041,4.65,-0.064],[5.16165,15.5972,4.81,0.313],[5.2423,-8.2016,0.18,-0.03],[5.40795,-2.3971,3.35,-0.24],[5.53345,-0.2991,2.25,-0.175],[5.58563,9.9342,3.39,-0.16],[5.67931,-1.9426,1.74,-0.199],[5.79594,-9.6696,2.07,-0.168],[5.60356,-1.2019,1.69,-0.184]],[[0,1,2,3,4,5,6,7],[8,9,10,11,12,7,13,14,15],[16,17,18,6,19,5,20,21],[20,22,18]]],["Pav",2,[[20.42746,-56.7351,1.94,-0.118],[20.74931,-66.2032,3.42,0.163],[20.14545,-66.1821,3.55,0.751],[18.87029,-62.1876,4.22,-0.15],[18.38712,-61.4939,4.35,1.462],[18.14301,-63.6686,4.33,0.228],[17.76222,-64.7239,3.61,1.161],[18.71726,-71.4281,4.01,1.134],[20.00987,-72.9105,3.97,-0.032],[21.44073,-65.3662,4.21,0.494]],[[0,1,2,3,4,5,6,7,8,1,9]]],["Peg",1,[[22.16646,33.1782,4.28,0.471],[22.71671,30.2212,2.93,0.852],[23.06291,28.0828,2.44,1.655],[0.13979,29.0904,2.07,-0.038],[0.2206,15.1836,2.83,-0.19],[23.07935,15.2053,2.49,-0.002],[22.77822,12.1729,4.2,0.502],[22.69103,10.8314,3.41,-0.086],[22.16999,6.1979,3.52,0.086],[21.73643,9.875,2.38,1.52],[22.83339,24.6016,3.51,0.933],[22.77552,23.5657,3.97,1.07],[22.11685,25.3451,3.77,0.435],[21.74409,25.645,4.14,0.425]],[[0,1,2,3,4,5,6,7,8,9],[5,2,10,11,12,13]]],["Per",1,[[3.73865,32.2882,3.84,0.022],[3.9022,31.8836,2.84,0.271],[3.98275,35.791,3.98,0.016],[3.96423,40.0102,2.9,-0.199],[3.75323,42.5785,3.77,0.425],[3.71542,47.7876,3.01,-0.125],[3.60816,48.1926,4.32,-0.058],[3.40538,49.8612,1.79,0.481],[3.07994,53.5064,2.91,0.716],[2.84495,55.8955,3.77,1.69],[2.90429,52.7625,3.93,0.758],[3.15111,49.6133,4.05,0.595],[3.15827,44.8575,3.79,0.98],[3.13615,40.9556,2.09,-0.003],[3.18816,39.6116,4.61,1.115],[3.08627,38.8403,3.32,1.528],[2.97935,39.6627,4.68,0.065],[2.99441,41.0329,5.89,1.445],[4.10973,50.3513,4.25,-0.011],[4.24829,48.4093,4.12,0.935],[4.14436,47.7125,3.96,-0.025],[2.73666,49.2284,4.1,0.514],[1.72768,50.6887,4.01,-0.098]],[[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,13],[18,19,20,5],[11,21,22]]],["Phe",2,[[0.43807,-42.306,2.4,1.083],[1.1014,-46.7184,3.32,0.885],[1.47276,-43.3182,3.41,1.542],[1.52086,-49.0727,3.93,0.972],[1.13975,-55.2458,3.94,-0.12],[0.15685,-45.7474,3.88,1.013]],[[0,1,2,3,4,1,5,0]]],["Pic",3,[[6.80318,-61.9414,3.24,0.225],[5.83046,-56.1667,4.5,1.075],[5.78808,-51.0665,3.85,0.171]],[[0,1,2]]],["Psc",2,[[1.22915,24.5837,4.67,1.047],[1.19435,30.0896,4.51,1.092],[1.32444,27.2641,4.74,0.032],[1.19089,21.0347,4.66,1.024],[1.52473,15.3458,3.62,0.974],[1.75657,9.1577,4.26,0.942],[2.03412,2.7638,3.82,0.024],[1.8926,3.1875,4.61,0.928],[1.69053,5.4876,4.45,1.347],[1.50309,6.1438,4.84,1.372],[1.22886,7.5754,5.21,0.32],[1.04906,7.8901,4.27,0.952],[0.81137,7.5851,4.44,1.5],[23.98853,6.8633,4.03,0.419],[23.66585,5.6263,4.13,0.507],[23.46614,6.379,4.27,1.062],[23.33905,5.3813,5.05,1.204],[23.28609,3.2823,3.7,0.916],[23.44887,1.2556,4.95,0.036],[23.70078,1.78,4.49,0.2],[23.7732,3.4868,4.95,2.508],[23.06461,3.82,4.48,-0.115]],[[0,1,2,0,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,14],[17,21]]],["PsA",2,[[22.67759,-27.0436,4.18,-0.105],[22.96085,-29.6222,1.17,0.145],[22.93247,-32.5396,4.2,0.952],[22.87543,-32.8755,4.46,-0.037],[22.52509,-32.3461,4.29,0.011],[22.13973,-32.9885,4.5,0.054],[21.74911,-33.0258,4.35,-0.053],[21.7956,-30.8983,5.02,0.042]],[[0,1,2,3,4,5,6,7,5,0]]],["Pup",2,[[6.62935,-43.1959,3.17,-0.103],[7.28571,-37.0975,2.71,1.616],[7.58969,-28.3693,4.65,-0.111],[7.64719,-26.8038,3.8,-0.159],[7.82157,-24.8598,3.34,1.218],[7.94765,-22.8801,4.2,0.718],[8.12573,-24.3043,2.83,0.458],[8.05973,-40.0031,2.21,-0.269],[8.15887,-47.3366,1.75,-0.145],[7.80143,-25.9372,4.4,-0.07],[7.73013,-28.9548,3.94,0.16]],[[0,1,2,3,4,5,6,7,8],[4,9,10,2]]],["Pyx",3,[[8.05973,-40.0031,2.21,-0.269],[8.66837,-35.3084,3.97,0.936],[8.72654,-33.1864,3.68,-0.18],[8.8422,-27.7098,4.02,1.272]],[[0,1,2,3]]],["Ret",3,[[4.24041,-62.4739,3.33,0.915],[4.27473,-59.3022,4.44,1.078],[3.9791,-61.4002,4.56,1.59],[3.73666,-64.8069,3.84,1.133]],[[0,1,2,3,0]]],["Sge",3,[[19.66827,18.0139,4.39,0.777],[19.78979,18.5343,3.68,1.313],[19.97929,19.4921,3.51,1.571],[19.68415,17.476,4.39,1.041]],[[0,1,2],[3,1]]],["Sgr",1,[[18.29379,-36.7617,3.1,1.582],[18.40287,-34.3846,1.79,-0.031],[18.3499,-29.8281,2.72,1.38],[18.46618,-25.4217,2.82,1.025],[18.22939,-21.0588,3.84,0.195],[19.37731,-44.459,3.96,-0.085],[19.39811,-40.6159,3.96,-0.105],[19.04353,-29.8801,2.6,0.062],[18.76094,-26.9908,3.17,-0.107],[19.92103,-41.8683,4.12,1.063],[19.99561,-35.2763,4.37,-0.15],[19.93065,-26.2995,4.7,0.748],[19.61179,-24.8836,4.59,-0.075],[19.42125,-24.5086,5.02,0.235],[19.25901,-25.2567,4.86,0.569],[18.92109,-26.2967,2.05,-0.134],[18.0968,-30.4241,2.98,0.981],[19.11567,-27.6704,3.32,1.169],[19.07805,-21.7415,3.76,1.012],[19.16273,-21.0236,2.88,0.377],[19.29391,-18.9529,4.88,1.013],[19.36121,-17.8472,3.92,0.228],[19.36212,-15.955,4.52,0.079],[18.96217,-21.1067,3.52,1.151],[18.90283,-22.7448,4.86,1.412]],[[0,1,2,3,4],[5,6,7,8,3],[9,10,11,12,13,14,15,8,2,16,1,7,17,15,18,19,20,21,22],[18,23,24,15]]],["Sco",1,[[15.98087,-26.1141,2.89,-0.18],[16.00556,-22.6217,2.29,-0.117],[16.09062,-19.8055,2.56,-0.065],[16.35315,-25.5928,2.9,0.299],[16.49013,-26.432,1.06,1.865],[16.59804,-28.216,2.82,-0.206],[16.83606,-34.2932,2.29,1.144],[16.86451,-38.0474,3,-0.2],[16.90973,-42.3613,3.62,1.393],[17.20255,-43.2392,3.32,0.441],[17.62198,-42.9978,1.86,0.406],[17.79308,-40.127,2.99,0.509],[17.70813,-39.03,2.39,-0.171],[17.56015,-37.1038,1.62,-0.231]],[[0,1,2],[1,3,4,5,6,7,8,9,10,11,12,13]]],["Scl",3,[[0.97677,-29.3574,4.3,-0.154],[23.81543,-28.1303,4.59,0.001],[23.31373,-32.532,4.41,1.109],[23.54951,-37.8183,4.38,-0.095]],[[0,1,2,3]]],["Sct",3,[[18.58679,-8.2441,3.85,1.317],[18.78624,-4.7479,4.22,1.087],[18.70456,-9.0525,4.7,0.358],[18.48663,-14.5658,4.67,0.076]],[[0,1,2,3,0]]],["Ser",3,[[15.76979,15.4218,3.65,0.073],[15.69251,19.6704,4.51,0.062],[15.81233,18.1416,4.09,1.616],[15.94089,15.6616,3.85,0.478],[15.58004,10.5389,3.8,0.268],[15.7378,6.4256,2.63,1.167],[15.84693,4.4777,3.71,0.147],[16.23909,-3.6943,2.73,1.584],[17.17297,-15.7249,2.43,0.059],[17.62645,-15.3986,3.54,0.262],[17.98377,-9.7736,3.32,0.987],[18.05137,-8.1803,4.77,0.41],[18.35517,-2.8988,3.23,0.941],[18.93699,4.2036,4.62,0.161]],[[0,1,2,3,0,4,5,6,7],[8,9,10,11,12,13]]],["Sex",3,[[10.1323,-0.3716,4.48,-0.032],[9.87512,-8.105,5.07,0.038],[10.49131,-2.7391,5.19,-0.05],[10.50485,-0.637,5.08,-0.138]],[[0,1,2,3]]],["Tau",1,[[5.62741,21.1425,2.97,-0.148],[4.59868,16.5093,0.87,1.538],[4.47771,15.8709,3.4,0.179],[4.32989,15.6276,3.65,0.981],[4.38225,17.5425,3.77,0.983],[4.47695,19.1804,3.53,1.014],[5.4382,28.6075,1.65,-0.13],[4.01134,12.4903,3.41,-0.099],[3.45282,9.7327,3.73,-0.082],[4.05261,5.9893,3.91,0.032],[3.41355,9.0289,3.61,0.887],[3.61455,0.4017,4.29,0.575]],[[0,1,2,3,4,5,6],[3,7,8,9],[8,10,11]]],["Tel",3,[[18.18715,-45.9544,4.52,1.009],[18.44956,-45.9685,3.49,-0.179],[18.48051,-49.0706,4.1,0.995]],[[0,1,2]]],["Tri",3,[[1.88469,29.5788,3.42,0.488],[2.15906,34.9873,3,0.14],[2.28857,33.8472,4.03,0.019]],[[0,1,2,0]]],["TrA",2,[[16.81108,-69.0277,1.91,1.447],[15.91905,-63.4307,2.83,0.315],[15.31516,-68.6795,2.87,0.014]],[[0,1,2,0]]],["Tuc",3,[[22.30836,-60.2596,2.87,1.39],[23.29049,-58.2357,3.99,0.41],[0.52574,-62.9582,4.36,-0.064],[0.33452,-64.8748,4.23,0.576],[23.99861,-65.5771,4.49,-0.075],[22.45555,-64.9664,4.51,-0.029]],[[0,1,2,3,4,5,0]]],["UMa",1,[[12.2571,57.0326,3.32,0.077],[11.06213,61.751,1.81,1.061],[11.03069,56.3824,2.34,0.033],[11.89718,53.6948,2.41,0.044],[12.90049,55.9598,1.76,-0.022],[13.39876,54.9254,2.23,0.057],[13.79235,49.3133,1.85,-0.099],[11.76751,47.7794,3.69,1.181],[11.30798,33.0943,3.49,1.4],[11.30312,31.5308,3.79,0.606],[11.16106,44.4985,3,1.144],[10.37215,41.4995,3.06,1.603],[10.28494,42.9144,3.45,0.029],[9.52547,63.0619,3.65,0.36],[8.50441,60.7182,3.35,0.856],[9.84982,59.0387,3.78,0.291],[9.86843,54.0643,4.55,0.038],[9.54762,51.6773,3.17,0.475],[8.98679,48.0418,3.12,0.223],[9.06043,47.1565,3.57,0.007]],[[0,1,2,3,0,4,5,6],[3,7,8,9],[7,10,11],[10,12],[1,13,14,15,2],[2,16,17,18],[19,17]]],["UMi",2,[[15.73431,77.7945,4.29,0.038],[16.29175,75.7553,4.95,0.393],[15.34547,71.834,3,0.058],[14.84509,74.1555,2.07,1.465],[16.76618,82.0373,4.21,0.897],[17.53695,86.5865,4.35,0.021],[2.5303,89.2641,1.97,0.636]],[[0,1,2,3,0,4,5,6]]],["Vel",2,[[8.74506,-54.7088,1.93,0.043],[9.36856,-55.0107,2.47,-0.141],[9.94771,-54.5678,3.52,-0.067],[10.77949,-49.4203,2.69,0.901],[10.2456,-42.1219,3.85,0.051],[9.51167,-40.4668,3.6,0.371],[9.13327,-43.4326,2.23,1.665],[8.15887,-47.3366,1.75,-0.145]],[[0,1,2,3,4,5,6,7]]],["Vir",1,[[11.76432,6.5294,4.04,1.501],[11.84492,1.7647,3.59,0.518],[12.33177,-0.6668,3.89,0.026],[12.69435,-1.4494,2.74,0.368],[13.16583,-5.539,4.38,-0.008],[13.41988,-11.1613,0.98,-0.235],[14.26691,-6.0005,4.07,0.511],[14.71767,-5.6582,3.87,0.385],[13.03628,10.9592,2.85,0.934],[12.92673,3.3975,3.39,1.571],[13.57822,-0.5958,3.38,0.114],[14.02744,1.5445,4.23,0.121],[14.77081,1.8929,3.73,-0.005]],[[0,1,2,3,4,5,6,7],[8,9,3],[4,10,11,12]]],["Vol",3,[[9.04077,-66.3961,4,0.145],[8.42894,-66.1369,3.77,1.132],[8.13217,-68.6171,4.35,-0.113],[7.28051,-67.9572,3.97,0.76],[7.14579,-70.4989,3.78,1.006]],[[0,1,2,3,4,2,0]]],["Vul",3,[[19.27029,21.3904,4.76,-0.058],[19.47843,24.6649,4.44,1.502],[19.89103,24.0796,4.57,-0.047],[20.01835,27.7536,4.66,0.184],[20.26281,27.8142,4.5,1.258]],[[0,1,2,3,4]]]];
+const IAU_LATIN = {"And":"Andromeda","Ant":"Antlia","Aps":"Apus","Aqr":"Aquarius","Aql":"Aquila","Ara":"Ara","Ari":"Aries","Aur":"Auriga","Boo":"Bootes","Cae":"Caelum","Cam":"Camelopardalis","Cnc":"Cancer","CVn":"Canes Venatici","CMa":"Canis Major","CMi":"Canis Minor","Cap":"Capricornus","Car":"Carina","Cas":"Cassiopeia","Cen":"Centaurus","Cep":"Cepheus","Cet":"Cetus","Cha":"Chamaeleon","Cir":"Circinus","Col":"Columba","Com":"Coma Berenices","CrA":"Corona Australis","CrB":"Corona Borealis","Crv":"Corvus","Crt":"Crater","Cru":"Crux","Cyg":"Cygnus","Del":"Delphinus","Dor":"Dorado","Dra":"Draco","Equ":"Equuleus","Eri":"Eridanus","For":"Fornax","Gem":"Gemini","Gru":"Grus","Her":"Hercules","Hor":"Horologium","Hya":"Hydra","Hyi":"Hydrus","Ind":"Indus","Lac":"Lacerta","Leo":"Leo","LMi":"Leo Minor","Lep":"Lepus","Lib":"Libra","Lup":"Lupus","Lyn":"Lynx","Lyr":"Lyra","Men":"Mensa","Mic":"Microscopium","Mon":"Monoceros","Mus":"Musca","Nor":"Norma","Oct":"Octans","Oph":"Ophiuchus","Ori":"Orion","Pav":"Pavo","Peg":"Pegasus","Per":"Perseus","Phe":"Phoenix","Pic":"Pictor","Psc":"Pisces","PsA":"Piscis Austrinus","Pup":"Puppis","Pyx":"Pyxis","Ret":"Reticulum","Sge":"Sagitta","Sgr":"Sagittarius","Sco":"Scorpius","Scl":"Sculptor","Sct":"Scutum","Ser":"Serpens","Sex":"Sextans","Tau":"Taurus","Tel":"Telescopium","Tri":"Triangulum","TrA":"Triangulum Australe","Tuc":"Tucana","UMa":"Ursa Major","UMi":"Ursa Minor","Vel":"Vela","Vir":"Virgo","Vol":"Volans","Vul":"Vulpecula"};
+const CONSTELLATION_STAR_EXTRAS = {"And":[[0.29516,37.7335,4.6,null]],"Aps":[[16.4483,-78.7965,4.68,null]],"Aql":[[18.99372,15.0683,4.02,null],[19.028,-5.7389,4.02,null]],"Aqr":[[23.23872,-6.0489,4.22,null],[22.91083,-15.8208,3.27,null],[22.82653,-13.5925,4.01,null]],"Ara":[[18.11053,-50.0917,3.66,null]],"Aur":[[5.378,29.21,1.65,null],[5.4843,29.398,1.65,null]],"CMa":[[6.61139,-19.2561,3.96,null],[6.90219,-24.1839,3.87,null]],"Cap":[[20.30092,-12.5447,3.1,null],[21.618,-19.4658,4.68,null]],"Car":[[8.8216,-55.462,1.95,null],[8.1268,-48.283,4.27,null]],"Cen":[[14.00336,-45.2036,3.9,null],[13.97119,-42.1008,3.8,null],[14.10078,-41.1797,4.4,null],[14.34261,-37.8853,4,null],[13.82601,-42.0808,3,null],[13.51742,-39.4075,3.88,null],[12.66458,-39.9875,4.64,null]],"Cha":[[8.32643,-77.202,4,null]],"Col":[[5.95894,-35.2833,4.36,null]],"Cyg":[[20.25019,47.4712,3,null],[20.95289,41.1672,3.94,null]],"Eri":[[4.22614,-7.2451,4,null],[2.7713,-13.006,4.25,null],[2.7388,-14.857,4.25,null],[3.89517,-24.6125,4.6,null],[3.99875,-24.0164,4.66,null],[4.5585,-29.7667,4.51,null],[3.76193,-37.4671,4.2,null],[2.66333,-42.8917,4.75,null]],"Gem":[[7.74078,24.3981,3.57,null],[7.42878,27.7981,3.79,null],[6.87981,33.9611,3.6,null],[6.48272,20.2122,4.14,null],[6.06867,23.2633,4.15,null]],"Gru":[[22.4919,-43.6225,3.3,null]],"Her":[[17.65775,46.0064,3.8,null],[17.51231,26.1106,4.41,null],[16.42361,14.0333,4.57,null],[16.54342,11.4881,4.84,null]],"Hya":[[10.08542,-13.0647,4.6,null],[10.943,-17.646,4.07,null],[11.2267,-23.72,4.48,null]],"Hyi":[[2.51115,-68.4632,3.4,null]],"Leo":[[9.41092,26.1822,4.46,null],[9.52867,22.9678,4.31,null],[11.39875,10.5292,4,null],[11.35228,6.0294,4.06,null]],"Lyn":[[9.10883,38.4522,4.56,null]],"Oph":[[16.46339,-8.3717,4.63,null]],"Ori":[[6.1626,14.4884,3.8,null]],"Pav":[[18.94917,-67.2336,4.44,null]],"Peg":[[0.0637,29.076,2.06,null],[0.1463,28.087,2.06,null]],"Per":[[4.30406,50.2956,4.61,null]],"Pup":[[8.144,-46.348,4.27,null],[6.4537,-50.761,-0.72,null]],"Pyx":[[8.1344,-39.496,2.2,null]],"Sco":[[17.51272,-37.2958,2.7,null],[17.83097,-37.0433,3.21,null],[16.19991,-19.4606,4.01,null],[15.94808,-29.2139,3.9,null]],"Ser":[[15.827,-3.4303,3.53,null],[16.1724,-3.655,2.74,null],[17.2423,-15.689,2.43,null],[17.9382,-10.512,3.34,null],[18.0265,-8.998,3.34,null]],"TrA":[[15.612,-66.3169,4.11,null]],"Vir":[[12.08681,8.7331,4.13,null]]};
+const CONSTELLATION_EXTRA_EDGES = {"And":[[[23.63561,43.2681],[0.29516,37.7335]],[[0.29516,37.7335],[0.61469,33.7194]]],"Aps":[[[14.79767,-79.0447],[16.4483,-78.7965]]],"Aql":[[[18.99372,15.0683],[19.09017,13.8633]],[[19.10414,-4.8825],[19.028,-5.7389]]],"Aqr":[[[22.87692,-7.5797],[23.23872,-6.0489]],[[23.23872,-6.0489],[23.29839,-9.1825]],[[23.29839,-9.1825],[22.91083,-15.8208]],[[22.91083,-15.8208],[22.82653,-13.5925]],[[22.82653,-13.5925],[22.87692,-7.5797]]],"Ara":[[[17.53069,-49.8761],[18.11053,-50.0917]]],"Aur":[[[5.378,29.21],[4.94989,33.1661]],[[5.99539,37.2125],[5.4843,29.398]]],"CMa":[[[6.37833,-17.9558],[6.61139,-19.2561]],[[6.61139,-19.2561],[6.90219,-24.1839]],[[6.90219,-24.1839],[6.97708,-28.9719]]],"Cap":[[[20.30092,-12.5447],[20.35019,-14.7814]],[[21.44444,-22.4114],[21.618,-19.4658]],[[21.618,-19.4658],[21.784,-16.1272]],[[21.09911,-17.2328],[20.30092,-12.5447]]],"Car":[[[9.28483,-59.2753],[8.8216,-55.462]],[[7.94631,-52.9822],[8.1268,-48.283]]],"Cen":[[[13.92567,-47.2883],[14.00336,-45.2036]],[[14.00336,-45.2036],[13.97119,-42.1008]],[[13.97119,-42.1008],[14.59178,-42.1578]],[[13.97119,-42.1008],[14.10078,-41.1797]],[[14.10078,-41.1797],[14.34261,-37.8853]],[[14.34261,-37.8853],[14.11139,-36.37]],[[14.11139,-36.37],[13.82601,-42.0808]],[[13.82601,-42.0808],[13.92567,-47.2883]],[[13.82601,-42.0808],[13.51742,-39.4075]],[[13.51742,-39.4075],[13.34328,-36.7122]],[[13.34328,-36.7122],[12.66458,-39.9875]]],"Cha":[[[8.32643,-77.202],[10.59114,-78.6078]]],"Col":[[[5.84933,-35.7683],[5.95894,-35.2833]],[[5.95894,-35.2833],[6.36856,-33.4364]]],"Cyg":[[[19.49508,51.7297],[20.25019,47.4712]],[[20.25019,47.4712],[20.69053,45.2803]],[[20.69053,45.2803],[20.95289,41.1672]],[[20.95289,41.1672],[21.21561,30.2269]]],"Eri":[[[4.60531,-3.3525],[4.22614,-7.2451]],[[4.22614,-7.2451],[3.96717,-13.5086]],[[2.94047,-8.8981],[2.7713,-13.006]],[[2.7388,-14.857],[2.75172,-18.5725]],[[3.78081,-23.2497],[3.89517,-24.6125]],[[3.89517,-24.6125],[3.99875,-24.0164]],[[3.99875,-24.0164],[4.5585,-29.7667]],[[4.5585,-29.7667],[4.5925,-30.5622]],[[3.82425,-36.2003],[3.76193,-37.4671]],[[3.76193,-37.4671],[3.61825,-40.2747]],[[2.67778,-39.8556],[2.66333,-42.8917]],[[2.66333,-42.8917],[2.44975,-47.7039]]],"Gem":[[[7.59869,26.8958],[7.74078,24.3981]],[[7.59869,26.8958],[7.42878,27.7981]],[[7.42878,27.7981],[7.18564,30.245]],[[7.18564,30.245],[6.87981,33.9611]],[[6.73219,25.1311],[6.48272,20.2122]],[[6.24797,22.5067],[6.06867,23.2633]]],"Gru":[[[22.10192,-39.5433],[22.4919,-43.6225]],[[22.4919,-43.6225],[22.13722,-46.9611]],[[22.71114,-46.8847],[22.4919,-43.6225]]],"Her":[[[17.93756,37.2506],[17.65775,46.0064]],[[17.25053,24.8392],[17.51231,26.1106]],[[17.51231,26.1106],[17.77431,27.7206]],[[16.36533,19.1531],[16.42361,14.0333]],[[16.42361,14.0333],[16.54342,11.4881]]],"Hya":[[[9.85797,-14.8467],[10.08542,-13.0647]],[[10.08542,-13.0647],[10.17647,-12.3542]],[[10.82708,-16.1936],[10.943,-17.646]],[[11.2267,-23.72],[11.55003,-31.8578]]],"Hyi":[[[3.78731,-74.2389],[2.51115,-68.4632]],[[2.51115,-68.4632],[1.9795,-61.5697]]],"Leo":[[[9.87939,26.0069],[9.41092,26.1822]],[[9.41092,26.1822],[9.52867,22.9678]],[[9.52867,22.9678],[9.76419,23.7742]],[[11.23733,15.4294],[11.39875,10.5292]],[[11.39875,10.5292],[11.35228,6.0294]]],"Lyn":[[[9.31408,36.8025],[9.10883,38.4522]],[[9.10883,38.4522],[9.01067,41.7828]]],"Oph":[[[16.30536,-4.6925],[16.46339,-8.3717]],[[16.46339,-8.3717],[16.61931,-10.5672]]],"Ori":[[[6.03972,9.6475],[6.1626,14.4884]]],"Pav":[[[20.14544,-66.1819],[18.94917,-67.2336]],[[18.94917,-67.2336],[18.14303,-63.6683]]],"Peg":[[[0.0637,29.076],[23.06292,28.0828]],[[0.22061,15.1836],[0.1463,28.087]]],"Per":[[[4.24831,48.4094],[4.30406,50.2956]],[[4.30406,50.2956],[4.10972,50.3514]]],"Pup":[[[8.144,-46.348],[8.05975,-40.0033]],[[6.62936,-43.1961],[6.4537,-50.761]]],"Pyx":[[[8.1344,-39.496],[8.66833,-35.3083]]],"Sco":[[[17.70814,-39.03],[17.51272,-37.2958]],[[17.51272,-37.2958],[17.56014,-37.1039]],[[17.56014,-37.1039],[17.83097,-37.0433]],[[16.09061,-19.8053],[16.19991,-19.4606]],[[15.98086,-26.1142],[15.94808,-29.2139]]],"Ser":[[[15.84694,4.4778],[15.827,-3.4303]],[[15.827,-3.4303],[16.1724,-3.655]],[[17.2423,-15.689],[17.62644,-15.3986]],[[17.62644,-15.3986],[17.9382,-10.512]],[[18.0265,-8.998],[18.35517,-2.8989]]],"TrA":[[[15.91903,-63.4306],[15.612,-66.3169]],[[15.612,-66.3169],[15.31517,-68.6794]]],"Vir":[[[12.33178,-0.6669],[12.08681,8.7331]],[[12.08681,8.7331],[11.76433,6.5294]]]};
+const LATIN_TO_ES = {
+  'Andromeda':'Andrómeda','Antlia':'Máquina Neumática','Apus':'Ave del Paraíso','Aquarius':'Acuario',
+  'Aquila':'Águila','Ara':'Altar','Aries':'Aries','Auriga':'Auriga','Bootes':'Boyero','Caelum':'Buril',
+  'Camelopardalis':'Jirafa','Cancer':'Cáncer','Canes Venatici':'Perros de Caza','Canis Major':'Can Mayor',
+  'Canis Minor':'Can Menor','Capricornus':'Capricornio','Carina':'Quilla','Cassiopeia':'Casiopea',
+  'Centaurus':'Centauro','Cepheus':'Cefeo','Cetus':'Ballena','Chamaeleon':'Camaleón','Circinus':'Compás',
+  'Columba':'Paloma','Coma Berenices':'Cabellera de Berenice','Corona Australis':'Corona Austral',
+  'Corona Borealis':'Corona Boreal','Corvus':'Cuervo','Crater':'Copa','Crux':'Cruz del Sur','Cygnus':'Cisne',
+  'Delphinus':'Delfín','Dorado':'Dorado','Draco':'Dragón','Equuleus':'Caballito','Eridanus':'Erídano',
+  'Fornax':'Horno','Gemini':'Géminis','Grus':'Grulla','Hercules':'Hércules','Horologium':'Reloj',
+  'Hydra':'Hidra','Hydrus':'Hidra macho','Indus':'Indio','Lacerta':'Lagarto','Leo':'León',
+  'Leo Minor':'León Menor','Lepus':'Liebre','Libra':'Libra','Lupus':'Lobo','Lynx':'Lince','Lyra':'Lira',
+  'Mensa':'Mesa','Microscopium':'Microscopio','Monoceros':'Unicornio','Musca':'Mosca','Norma':'Escuadra',
+  'Octans':'Octante','Ophiuchus':'Ofiuco','Orion':'Orión','Pavo':'Pavo','Pegasus':'Pegaso','Perseus':'Perseo',
+  'Phoenix':'Fénix','Pictor':'Pintor','Pisces':'Piscis','Piscis Austrinus':'Pez Austral','Puppis':'Popa',
+  'Pyxis':'Brújula','Reticulum':'Retículo','Sagitta':'Flecha','Sagittarius':'Sagitario','Scorpius':'Escorpio',
+  'Sculptor':'Escultor','Scutum':'Escudo','Serpens':'Serpiente','Sextans':'Sextante','Taurus':'Tauro',
+  'Telescopium':'Telescopio','Triangulum':'Triángulo','Triangulum Australe':'Triángulo Austral','Tucana':'Tucán',
+  'Ursa Major':'Osa Mayor','Ursa Minor':'Osa Menor','Vela':'Vela','Virgo':'Virgo','Volans':'Pez Volador',
+  'Vulpecula':'Zorra'
+};
+const skyCatalog = {loaded:false, error:null, constellations:[], stars:[], loading:false};
+
+function labelForLatinName(name){
+  return LATIN_TO_ES[name] || name;
+}
+function displayConstellationName(c){
+  if(els.constellationLanguage.value==='la') return c.latin || c.label || c.id;
+  if(c.latin) return LATIN_TO_ES[c.latin] || c.label || c.latin;
+  return c.label || c.id;
+}
+function toggleConstellationLanguage(){
+  els.constellationLanguage.value = els.constellationLanguage.value==='es' ? 'la' : 'es';
+}
+function colorForKey(key){
+  let h=0;
+  for(let i=0;i<key.length;i++) h=(h*31 + key.charCodeAt(i))%360;
+  return `hsl(${h} 72% 74%)`;
+}
+
+// RA en horas; Dec en grados; mag aparente aproximada.
+// core=true: núcleo pedagógico para el modo Avanzado.
+const stars = [
+  // ORION
+  ['Betelgeuse','Orion',5.9195,7.407,0.42,true],
+  ['Bellatrix','Orion',5.4189,6.350,1.64,true],
+  ['Mintaka','Orion',5.5334,-0.299,2.23,true],
+  ['Alnilam','Orion',5.6036,-1.202,1.69,true],
+  ['Alnitak','Orion',5.6793,-1.943,1.74,true],
+  ['Rigel','Orion',5.2423,-8.202,0.13,true],
+  ['Saiph','Orion',5.7959,-9.670,2.06,true],
+  ['Meissa','Orion',5.5856,9.934,3.39,false],
+  ['Hatysa','Orion',5.5906,-5.910,2.77,false],
+
+  // URSA MAJOR
+  ['Dubhe','UrsaMajor',11.0621,61.751,1.79,true],
+  ['Merak','UrsaMajor',11.0307,56.382,2.37,true],
+  ['Phecda','UrsaMajor',11.8972,53.695,2.44,true],
+  ['Megrez','UrsaMajor',12.2571,57.033,3.31,true],
+  ['Alioth','UrsaMajor',12.9005,55.960,1.76,true],
+  ['Mizar','UrsaMajor',13.3987,54.925,2.23,true],
+  ['Alkaid','UrsaMajor',13.7923,49.313,1.85,true],
+  ['Muscida','UrsaMajor',8.5044,60.718,3.35,false],
+  ['Talitha','UrsaMajor',8.9868,48.042,3.14,false],
+  ['Tania Borealis','UrsaMajor',10.2849,42.914,3.45,false],
+  ['Tania Australis','UrsaMajor',10.3722,41.500,3.06,false],
+  ['Alula Borealis','UrsaMajor',11.3079,33.094,3.48,false],
+  ['Alula Australis','UrsaMajor',11.3031,31.529,3.79,false],
+
+  // CASSIOPEIA
+  ['Caph','Cassiopeia',0.1529,59.150,2.28,true],
+  ['Schedar','Cassiopeia',0.6751,56.537,2.24,true],
+  ['Gamma Cassiopeiae','Cassiopeia',0.9451,60.717,2.15,true],
+  ['Ruchbah','Cassiopeia',1.4302,60.235,2.68,true],
+  ['Segin','Cassiopeia',1.9066,63.670,3.35,true],
+  ['Achird','Cassiopeia',0.8183,57.815,3.46,false],
+
+  // CYGNUS
+  ['Deneb','Cygnus',20.6905,45.280,1.25,true],
+  ['Sadr','Cygnus',20.3705,40.257,2.23,true],
+  ['Gienah','Cygnus',20.7702,33.970,2.48,true],
+  ['Delta Cygni','Cygnus',19.7496,45.131,2.86,true],
+  ['Albireo','Cygnus',19.5120,27.960,3.05,true],
+  ['Zeta Cygni','Cygnus',21.2156,30.227,3.21,false],
+  ['Eta Cygni','Cygnus',19.9384,35.084,3.89,false],
+
+  // SCORPIUS
+  ['Antares','Scorpius',16.4901,-26.432,0.96,true],
+  ['Acrab','Scorpius',16.0906,-19.805,2.56,true],
+  ['Dschubba','Scorpius',16.0056,-22.622,2.32,true],
+  ['Pi Scorpii','Scorpius',15.9809,-26.114,2.89,false],
+  ['Sigma Scorpii','Scorpius',16.3531,-25.593,2.90,false],
+  ['Tau Scorpii','Scorpius',16.5980,-28.216,2.82,false],
+  ['Epsilon Scorpii','Scorpius',16.8361,-34.293,2.31,true],
+  ['Mu Scorpii','Scorpius',16.8645,-38.047,3.00,false],
+  ['Eta Scorpii','Scorpius',17.2025,-43.239,3.33,false],
+  ['Sargas','Scorpius',17.6220,-43.000,1.87,true],
+  ['Kappa Scorpii','Scorpius',17.7081,-39.030,2.41,false],
+  ['Shaula','Scorpius',17.5601,-37.104,1.62,true],
+  ['Lesath','Scorpius',17.5127,-37.296,2.70,true],
+
+  // LEO
+  ['Regulus','Leo',10.1395,11.967,1.35,true],
+  ['Algieba','Leo',10.3329,19.842,2.08,true],
+  ['Adhafera','Leo',10.2782,23.417,3.44,true],
+  ['Rasalas','Leo',9.8794,26.007,3.88,true],
+  ['Alterf','Leo',9.7642,23.774,4.30,false],
+  ['Chertan','Leo',11.2373,15.430,3.34,true],
+  ['Zosma','Leo',11.2351,20.524,2.56,true],
+  ['Denebola','Leo',11.8177,14.572,2.14,true],
+  ['Subra','Leo',9.6858,9.892,3.52,false],
+
+  // CRUX
+  ['Acrux','Crux',12.4433,-63.099,0.76,true],
+  ['Mimosa','Crux',12.7953,-59.689,1.25,true],
+  ['Gacrux','Crux',12.5194,-57.113,1.63,true],
+  ['Imai','Crux',12.2524,-58.749,2.79,true],
+  ['Ginan','Crux',12.3560,-60.401,3.59,false],
+
+  // SAGITTARIUS
+  ['Kaus Australis','Sagittarius',18.4029,-34.385,1.79,true],
+  ['Kaus Media','Sagittarius',18.3499,-29.828,2.72,true],
+  ['Kaus Borealis','Sagittarius',18.4662,-25.422,2.82,true],
+  ['Nunki','Sagittarius',18.9211,-26.297,2.05,true],
+  ['Ascella','Sagittarius',19.0435,-29.880,2.60,true],
+  ['Alnasl','Sagittarius',18.0968,-30.424,2.98,true],
+  ['Albaldah','Sagittarius',19.1627,-21.024,2.88,false],
+  ['Rukbat','Sagittarius',19.3981,-40.616,3.97,false],
+  ['Arkab Prior','Sagittarius',19.3773,-44.459,3.96,false],
+  ['Arkab Posterior','Sagittarius',19.3869,-44.800,4.27,false]
+].map((s,i)=>({id:'s'+i,name:s[0],c:s[1],ra:s[2],dec:s[3],mag:s[4],core:s[5]}));
+
+const lines = {
+  Orion:[
+    ['Betelgeuse','Bellatrix'],['Betelgeuse','Alnitak'],['Bellatrix','Mintaka'],
+    ['Mintaka','Alnilam'],['Alnilam','Alnitak'],['Alnitak','Saiph'],['Mintaka','Rigel'],
+    ['Saiph','Rigel'],['Betelgeuse','Meissa'],['Bellatrix','Meissa']
+  ],
+  UrsaMajor:[['Dubhe','Merak'],['Merak','Phecda'],['Phecda','Megrez'],['Megrez','Dubhe'],
+    ['Megrez','Alioth'],['Alioth','Mizar'],['Mizar','Alkaid']],
+  Cassiopeia:[['Caph','Schedar'],['Schedar','Gamma Cassiopeiae'],['Gamma Cassiopeiae','Ruchbah'],['Ruchbah','Segin']],
+  Cygnus:[['Deneb','Sadr'],['Sadr','Albireo'],['Delta Cygni','Sadr'],['Sadr','Gienah']],
+  Scorpius:[['Acrab','Dschubba'],['Dschubba','Antares'],['Antares','Epsilon Scorpii'],['Epsilon Scorpii','Mu Scorpii'],
+    ['Mu Scorpii','Eta Scorpii'],['Eta Scorpii','Sargas'],['Sargas','Kappa Scorpii'],['Kappa Scorpii','Shaula'],['Shaula','Lesath']],
+  Leo:[['Regulus','Algieba'],['Algieba','Adhafera'],['Adhafera','Rasalas'],['Regulus','Chertan'],['Chertan','Zosma'],['Zosma','Denebola']],
+  Crux:[['Gacrux','Acrux'],['Imai','Mimosa']],
+  Sagittarius:[['Kaus Australis','Kaus Media'],['Kaus Media','Kaus Borealis'],['Kaus Media','Alnasl'],
+    ['Kaus Media','Nunki'],['Nunki','Ascella'],['Ascella','Kaus Australis']]
+};
+
+const spectralByName = {
+  'Betelgeuse':'M2','Bellatrix':'B2','Mintaka':'O9','Alnilam':'B0','Alnitak':'O9','Rigel':'B8','Saiph':'B0','Meissa':'O8','Hatysa':'O9',
+  'Dubhe':'K0','Merak':'A1','Phecda':'A0','Megrez':'A3','Alioth':'A1','Mizar':'A2','Alkaid':'B3','Muscida':'G4','Talitha':'A7',
+  'Tania Borealis':'A2','Tania Australis':'M0','Alula Borealis':'K3','Alula Australis':'G0',
+  'Caph':'F2','Schedar':'K0','Gamma Cassiopeiae':'B0','Ruchbah':'A5','Segin':'B3','Achird':'G0',
+  'Deneb':'A2','Sadr':'F8','Gienah':'K0','Delta Cygni':'B9','Albireo':'K2','Zeta Cygni':'G8','Eta Cygni':'K0',
+  'Antares':'M1','Acrab':'B1','Dschubba':'B0','Pi Scorpii':'B1','Sigma Scorpii':'B1','Tau Scorpii':'B0',
+  'Epsilon Scorpii':'K2','Mu Scorpii':'B1','Eta Scorpii':'F3','Sargas':'F0','Kappa Scorpii':'B1','Shaula':'B2','Lesath':'B2',
+  'Regulus':'B7','Algieba':'K0','Adhafera':'F0','Rasalas':'K2','Alterf':'K5','Chertan':'A2','Zosma':'A4','Denebola':'A3','Subra':'A',
+  'Acrux':'B0','Mimosa':'B0','Gacrux':'M3','Imai':'B2','Ginan':'K3',
+  'Kaus Australis':'B9','Kaus Media':'K3','Kaus Borealis':'K1','Nunki':'B2','Ascella':'A2','Alnasl':'K1',
+  'Albaldah':'F2','Rukbat':'B8','Arkab Prior':'B9','Arkab Posterior':'F2'
+};
+
+
+function spectralFromBV(bv){
+  if(!Number.isFinite(bv)) return null;
+  if(bv < -0.28) return 'O';
+  if(bv < -0.08) return 'B';
+  if(bv < 0.30) return 'A';
+  if(bv < 0.58) return 'F';
+  if(bv < 0.81) return 'G';
+  if(bv < 1.40) return 'K';
+  return 'M';
+}
+
+const spectralPalette = {
+  O:'#9bb7ff', B:'#b9ceff', A:'#eef4ff', F:'#fff8e8',
+  G:'#ffe7a0', K:'#ffc178', M:'#ff8a66'
+};
+
+const byName = new Map(stars.map(s=>[s.name,s]));
+const d2r = d => d*Math.PI/180;
+const r2d = r => r*180/Math.PI;
+function starVec(s){
+  const a=d2r(s.ra*15), d=d2r(s.dec);
+  return [Math.cos(d)*Math.cos(a), Math.sin(d), Math.cos(d)*Math.sin(a)];
+}
+
+const IMPORTANT_STAR_DATA = [
+  ['Sirius','CMa','Can Mayor',6.75247,-16.7161,-1.46,'A1V',8.6,'La estrella más brillante del cielo nocturno; es un sistema binario muy cercano.'],
+  ['Canopus','Car','Carina',6.39919,-52.6956,-0.74,'A9 II',310,'Segunda estrella más brillante del cielo; una supergigante luminosa del hemisferio sur.'],
+  ['Arcturus','Boo','Boyero',14.26103,19.1825,-0.05,'K1.5 III',36.7,'Gigante naranja cercana y una de las estrellas más brillantes del hemisferio norte.'],
+  ['Vega','Lyr','Lira',18.61564,38.7837,0.03,'A0V',25.0,'Una referencia fotométrica clásica; forma el Triángulo de Verano con Deneb y Altair.'],
+  ['Capella','Aur','Auriga',5.27817,45.9981,0.08,'G8 III + G0 III',42.9,'Sistema múltiple dominado por dos gigantes amarillas muy brillantes.'],
+  ['Rigel','Ori','Orión',5.24231,-8.2017,0.13,'B8 Ia',860,'Supergigante azul y una de las estrellas intrínsecamente más luminosas visibles a simple vista.'],
+  ['Procyon','CMi','Can Menor',7.65503,5.2250,0.34,'F5 IV-V',11.5,'Estrella cercana y brillante; junto con Sirius y Betelgeuse forma el Triángulo de Invierno.'],
+  ['Betelgeuse','Ori','Orión',5.91953,7.4069,0.42,'M1–M2 Ia-ab',550,'Supergigante roja variable, famosa por su enorme tamaño y sus cambios de brillo.'],
+  ['Achernar','Eri','Erídano',1.62858,-57.2367,0.46,'B6 Vep',139,'Estrella muy rápida y notablemente achatada por su rotación.'],
+  ['Hadar','Cen','Centauro',14.06372,-60.3730,0.61,'B1 III',390,'Una de las estrellas más brillantes de Centauro y guía visual hacia la Cruz del Sur.'],
+  ['Acrux','Cru','Cruz del Sur',12.44331,-63.0992,0.76,'B0.5 IV',320,'La estrella más brillante de la Cruz del Sur; en realidad es un sistema múltiple.'],
+  ['Altair','Aql','Águila',19.84639,8.8683,0.77,'A7V',16.7,'Estrella cercana de rotación muy rápida; vértice del Triángulo de Verano.'],
+  ['Aldebarán','Tau','Tauro',4.59867,16.5093,0.85,'K5 III',65.3,'Gigante naranja que marca visualmente el ojo de Tauro, aunque no pertenece al cúmulo de las Híades.'],
+  ['Antares','Sco','Escorpio',16.49014,-26.4319,0.96,'M1.5 Iab',550,'Supergigante roja cuyo color rojizo inspiró su nombre: “rival de Marte”.'],
+  ['Spica','Vir','Virgo',13.41989,-11.1614,0.98,'B1 V',250,'Sistema binario de estrellas azules muy calientes y la estrella más brillante de Virgo.'],
+  ['Pollux','Gem','Géminis',7.75525,28.0261,1.14,'K0 III',33.7,'Gigante naranja, la más brillante de Géminis; posee un exoplaneta confirmado.'],
+  ['Fomalhaut','PsA','Pez Austral',22.96086,-29.6222,1.16,'A3V',25.1,'Estrella cercana rodeada por un célebre disco de polvo.'],
+  ['Deneb','Cyg','Cisne',20.69053,45.2803,1.25,'A2 Ia',2600,'Supergigante extremadamente luminosa; vértice del Triángulo de Verano.'],
+  ['Regulus','Leo','Leo',10.13953,11.9672,1.35,'B7 V',79,'La estrella más brillante de Leo; gira tan rápido que está apreciablemente achatada.'],
+  ['Castor','Gem','Géminis',7.57664,31.8883,1.58,'A1 V',51,'Uno de los “gemelos” de Géminis; es un sistema estelar múltiple complejo.'],
+  ['Bellatrix','Ori','Orión',5.41886,6.3497,1.64,'B2 III',250,'Gigante azul que marca uno de los hombros de Orión.'],
+  ['Mirfak','Per','Perseo',3.40539,49.8611,1.79,'F5 Ib',510,'La estrella más brillante de Perseo y miembro destacado de la asociación Alfa Persei.'],
+  ['Polaris','UMi','Osa Menor',2.53019,89.2642,1.98,'F7 Ib',447,'La Estrella Polar: se encuentra muy cerca del polo norte celeste y es una cefeida variable.'],
+  ['Algol','Per','Perseo',3.13614,40.9556,2.12,'B8 V',93,'Binaria eclipsante histórica; su brillo disminuye periódicamente.'],
+  ['Alpheratz','And','Andrómeda',0.13981,29.0906,2.06,'B8 IV',97,'Marca una esquina del Gran Cuadrado de Pegaso, aunque pertenece oficialmente a Andrómeda.']
+].map((d,i)=>({
+  id:`important_${i}`,name:d[0],iau:d[1],constellation:d[2],
+  ra:d[3],dec:d[4],mag:d[5],spectral:d[6],distanceLy:d[7],description:d[8]
+}));
+
+// --- Filtros locales: Aras y Valencia ---
+const ARAS_LAT = d2r(39 + 56/60 + 42/3600);
+const ARAS_LON_DEG = -(1 + 6/60 + 5.4/3600);
+const VALENCIA_LAT = d2r(39.4699);
+const VALENCIA_LON_DEG = -0.3763;
+const LOCAL_MIN_ALT_DEG = 8;
+
+function julianDate(date){
+  return date.getTime()/86400000 + 2440587.5;
+}
+function gmstDeg(date){
+  const jd=julianDate(date), T=(jd-2451545.0)/36525;
+  return (280.46061837 + 360.98564736629*(jd-2451545.0) + 0.000387933*T*T - T*T*T/38710000)%360;
+}
+function altitudeRadAtSite(raRad,decRad,date,latRad,lonDeg){
+  const lst=d2r((gmstDeg(date)+lonDeg+360)%360);
+  let H=lst-raRad;
+  while(H>Math.PI)H-=2*Math.PI;
+  while(H<-Math.PI)H+=2*Math.PI;
+  return Math.asin(
+    Math.sin(latRad)*Math.sin(decRad)+
+    Math.cos(latRad)*Math.cos(decRad)*Math.cos(H)
+  );
+}
+function buildDateRangeUTC(startMs,endMs,stepMinutes=5){
+  const arr=[];
+  for(let ms=startMs; ms<=endMs; ms+=stepMinutes*60*1000){
+    arr.push(new Date(ms));
+  }
+  return arr;
+}
+const FILTER_PROFILES = {
+  arasSep25_22_00: {
+    key:'arasSep25_22_00',
+    label:'Aras · 25 sep · 22–00',
+    latRad:ARAS_LAT,
+    lonDeg:ARAS_LON_DEG,
+    minAltDeg:LOCAL_MIN_ALT_DEG,
+    samples:buildDateRangeUTC(Date.UTC(2026,8,25,20,0,0), Date.UTC(2026,8,25,22,0,0)),
+    orientDate:new Date(Date.UTC(2026,8,25,21,0,0)),
+    limitMag:4.9,   // Luna casi llena, pero cielo muy oscuro
+    skyQuality:0.86 // Aras compensa mucho la contaminación, la Luna resta
+  },
+  valenciaToday_22_00: {
+    key:'valenciaToday_22_00',
+    label:'Valencia · 24 sep · 22–00',
+    latRad:VALENCIA_LAT,
+    lonDeg:VALENCIA_LON_DEG,
+    minAltDeg:LOCAL_MIN_ALT_DEG,
+    samples:buildDateRangeUTC(Date.UTC(2026,8,24,20,0,0), Date.UTC(2026,8,24,22,0,0)),
+    orientDate:new Date(Date.UTC(2026,8,24,21,0,0)),
+    limitMag:3.6,   // ciudad + Luna muy brillante
+    skyQuality:0.56
+  }
+};
+function currentFilterKey(){
+  return els.skyFilter.value;
+}
+function currentFilterProfile(){
+  return FILTER_PROFILES[currentFilterKey()] || null;
+}
+function localFilterOn(){
+  return currentFilterKey()!=='all';
+}
+function sampleVisibilityForRaDec(raHours,decDeg,profile){
+  if(!profile) return {visible:true,maxAltDeg:90,bestAltDeg:90};
+  const ra=d2r(raHours*15), dec=d2r(decDeg);
+  let best=-90, visible=false;
+  for(const date of profile.samples){
+    const altDeg=r2d(altitudeRadAtSite(ra,dec,date,profile.latRad,profile.lonDeg));
+    if(altDeg>best) best=altDeg;
+    if(altDeg>=profile.minAltDeg) visible=true;
+  }
+  return {visible,maxAltDeg:best,bestAltDeg:best};
+}
+function sampleVisibilityForVec(v,profile){
+  if(!profile) return {visible:true,maxAltDeg:90,bestAltDeg:90};
+  const dec=r2d(Math.asin(Math.max(-1,Math.min(1,v[1]))));
+  let ra=Math.atan2(v[2],v[0]); if(ra<0)ra+=2*Math.PI;
+  const rah=r2d(ra)/15;
+  return sampleVisibilityForRaDec(rah,dec,profile);
+}
+function wholeConstellationVisibleForProfile(stars,profile){
+  if(!profile) return true;
+  if(!stars.length) return false;
+  return profile.samples.some(date =>
+    stars.every(s =>
+      r2d(altitudeRadAtSite(d2r(s.ra*15),d2r(s.dec),date,profile.latRad,profile.lonDeg)) >= profile.minAltDeg
+    )
+  );
+}
+function computeStarFilterMetrics(star){
+  const by={};
+  for(const [key,profile] of Object.entries(FILTER_PROFILES)){
+    by[key]=sampleVisibilityForRaDec(star.ra,star.dec,profile);
+  }
+  return by;
+}
+function computeBgFilterMetrics(v){
+  const by={};
+  for(const [key,profile] of Object.entries(FILTER_PROFILES)){
+    by[key]=sampleVisibilityForVec(v,profile);
+  }
+  return by;
+}
+function starPassesSkyFilter(s){
+  const key=currentFilterKey();
+  return key==='all' || !!s.visibilityByFilter?.[key]?.visible;
+}
+function activeFilterZenithVector(){
+  const profile=currentFilterProfile();
+  const date=profile ? profile.orientDate : new Date();
+  const lat=profile ? profile.latRad : VALENCIA_LAT;
+  const lon=profile ? profile.lonDeg : VALENCIA_LON_DEG;
+  const lst=d2r((gmstDeg(date)+lon+360)%360);
+  return [
+    Math.cos(lat)*Math.cos(lst),
+    Math.sin(lat),
+    Math.cos(lat)*Math.sin(lst)
+  ];
+}
+
+IMPORTANT_STAR_DATA.forEach(s=>{
+  s.v=starVec(s);
+  s.visibilityByFilter=computeStarFilterMetrics(s);
+});
+
+function currentViewCenterWorld(){
+  return qRotate(qConj(orientation),[0,0,1]);
+}
+function orientViewForActiveFilter(){
+  const center=currentViewCenterWorld();
+  const zenith=activeFilterZenithVector();
+  let dot=center[0]*zenith[0]+center[1]*zenith[1]+center[2]*zenith[2];
+
+  // Dirección tangente hacia el cénit local.
+  let up=[
+    zenith[0]-dot*center[0],
+    zenith[1]-dot*center[1],
+    zenith[2]-dot*center[2]
+  ];
+  let n=Math.hypot(...up);
+
+  // Justo en el cénit la vertical no fija el giro; usamos el polo norte celeste.
+  if(n<1e-5){
+    const north=[0,1,0];
+    dot=center[0]*north[0]+center[1]*north[1]+center[2]*north[2];
+    up=[
+      north[0]-dot*center[0],
+      north[1]-dot*center[1],
+      north[2]-dot*center[2]
+    ];
+    n=Math.hypot(...up);
+  }
+  if(n<1e-6) return;
+
+  up=up.map(v=>v/n);
+  const camUp=qRotate(orientation,up);
+
+  // +Y de cámara es la parte superior de la pantalla.
+  const currentAngle=Math.atan2(camUp[1],camUp[0]);
+  const roll=Math.PI/2-currentAngle;
+  const desired=qNorm(qMul(qAxis([0,0,1],roll),orientation));
+
+  animFrom=orientation.slice();
+  targetOrientation=desired;
+  animStart=performance.now();
+
+  const profile=currentFilterProfile();
+  toast(profile ? `Orientado para ${profile.label}` : 'Orientado · vista local actual');
+}
+stars.forEach(s=>{
+  s.v=starVec(s);
+  s.spectral=spectralByName[s.name]||null;
+  s.visibilityByFilter=computeStarFilterMetrics(s);
+});
+
+function buildFallbackExploreData(){
+  const constellations=[];
+  const fallbackStars=[];
+  for(const [cid, meta] of Object.entries(C)){
+    const localStars=stars.filter(s=>s.c===cid).map((s,i)=>{
+      const copy={...s, localIndex:i};
+      fallbackStars.push(copy);
+      return copy;
+    });
+    const segs=(lines[cid]||[]).map(([a,b])=>({
+      a: localStars.findIndex(s=>s.name===a),
+      b: localStars.findIndex(s=>s.name===b)
+    })).filter(seg=>seg.a>=0 && seg.b>=0);
+    let centroid=[0,0,0];
+    const use = localStars.filter(s=>s.core);
+    (use.length?use:localStars).forEach(s=>{centroid[0]+=s.v[0]; centroid[1]+=s.v[1]; centroid[2]+=s.v[2];});
+    const n=Math.hypot(...centroid)||1;
+    centroid=centroid.map(v=>v/n);
+    const latinMap={Orion:'Orion',UrsaMajor:'Ursa Major',Cassiopeia:'Cassiopeia',Cygnus:'Cygnus',Scorpius:'Scorpius',Leo:'Leo',Crux:'Crux',Sagittarius:'Sagittarius'};
+    constellations.push({
+      id:cid,label:meta.label,latin:latinMap[cid]||meta.label,color:meta.color,
+      stars:localStars,segments:segs,centroid,
+      wholeVisibleByFilter:Object.fromEntries(Object.entries(FILTER_PROFILES).map(([k,p])=>[k,wholeConstellationVisibleForProfile(localStars,p)]))
+    });
+  }
+  return {constellations, stars:fallbackStars};
+}
+const fallbackExploreData = buildFallbackExploreData();
+
+function currentExploreConstellations(){
+  return skyCatalog.constellations.length ? skyCatalog.constellations : fallbackExploreData.constellations;
+}
+function currentExploreStars(){
+  return skyCatalog.stars.length ? skyCatalog.stars : fallbackExploreData.stars;
+}
+function updateExploreHeader(){
+  if(game.mode!=='explore') return;
+  els.score.textContent='';
+  els.prompt.textContent='';
+  const profile=currentFilterProfile();
+  const suffix = profile ? ` · ${profile.label}` : '';
+  if(skyCatalog.loaded){
+    if(profile){
+      const visibleCs=skyCatalog.constellations.filter(constellationVisibleInFilter);
+      const cs=visibleCs.length;
+      const ss=visibleCs.reduce((n,c)=>n+c.stars.length,0);
+      els.score.textContent='';
+    }else{
+      els.score.textContent='';
+    }
+  }else if(skyCatalog.error){
+    els.score.textContent='';
+  }else{
+    els.score.textContent='88 constelaciones incluidas sin conexión';
+  }
+}
+function nearestConstellationStarIndex(cstars,coord,maxDeg=.12){
+  const [ra,dec]=coord;
+  const rr=d2r(ra*15), dd=d2r(dec);
+  let best=-1,bestD=Infinity;
+  for(let i=0;i<cstars.length;i++){
+    const s=cstars[i];
+    const sr=d2r(s.ra*15), sd=d2r(s.dec);
+    const dot=Math.sin(dd)*Math.sin(sd)+Math.cos(dd)*Math.cos(sd)*Math.cos(rr-sr);
+    const dist=Math.acos(Math.max(-1,Math.min(1,dot)))*180/Math.PI;
+    if(dist<bestD){bestD=dist;best=i;}
+  }
+  return bestD<=maxDeg ? best : -1;
+}
+function loadEmbeddedConstellations(){
+  const constellations=[];
+  const allStars=[];
+
+  for(const entry of EMBEDDED_CONSTELLATIONS){
+    const [iau,rank,rawStars,paths]=entry;
+    const latin=IAU_LATIN[iau] || iau;
+
+    const completeRawStars=[...rawStars,...(CONSTELLATION_STAR_EXTRAS[iau]||[])];
+    const cstars=completeRawStars.map((st,si)=>{
+      const obj={
+        id:`${iau}_${si}`,
+        name:`${iau}-${si+1}`,
+        c:iau,
+        ra:st[0],
+        dec:st[1],
+        mag:st[2],
+        bv:st[3],
+        core:false,
+        spectral:spectralFromBV(st[3])
+      };
+      obj.v=starVec(obj);
+      obj.visibilityByFilter=computeStarFilterMetrics(obj);
+      return obj;
+    });
+
+    const segments=[];
+    const segmentKeys=new Set();
+    const addSegment=(a,b)=>{
+      if(a<0||b<0||!cstars[a]||!cstars[b]||a===b)return;
+      const key=a<b?`${a}:${b}`:`${b}:${a}`;
+      if(segmentKeys.has(key))return;
+      segmentKeys.add(key);
+      segments.push({a,b});
+    };
+    for(const path of paths){
+      for(let i=0;i<path.length-1;i++) addSegment(path[i],path[i+1]);
+    }
+
+    // Los puntos complementarios añadidos en v15 ahora llevan también
+    // las conexiones de la figura de origen; ya no quedan estrellas sueltas.
+    for(const edge of (CONSTELLATION_EXTRA_EDGES[iau]||[])){
+      const a=nearestConstellationStarIndex(cstars,edge[0]);
+      const b=nearestConstellationStarIndex(cstars,edge[1]);
+      addSegment(a,b);
+    }
+
+    let centroid=[0,0,0];
+    const used=[...new Set(segments.flatMap(seg=>[seg.a,seg.b]))];
+    const base=(used.length?used.map(i=>cstars[i]).filter(Boolean):cstars);
+    base.forEach(s=>{centroid[0]+=s.v[0];centroid[1]+=s.v[1];centroid[2]+=s.v[2];});
+    const n=Math.hypot(...centroid)||1;
+    centroid=centroid.map(v=>v/n);
+
+    const c={
+      id:iau,
+      rank,
+      latin,
+      label:labelForLatinName(latin),
+      color:colorForKey(iau+latin),
+      stars:cstars,
+      segments,
+      paths:paths.map(p=>p.slice()),
+      centroid,
+      wholeVisibleByFilter:Object.fromEntries(Object.entries(FILTER_PROFILES).map(([k,p])=>[k,wholeConstellationVisibleForProfile(cstars,p)]))
+    };
+    constellations.push(c);
+    allStars.push(...cstars);
+  }
+
+  skyCatalog.constellations=constellations;
+  skyCatalog.stars=allStars;
+  skyCatalog.loaded=true;
+  skyCatalog.loading=false;
+  skyCatalog.error=null;
+}
+loadEmbeddedConstellations();
+
+// ---------- Quaternions ----------
+function qNorm(q){const n=Math.hypot(...q)||1; return q.map(v=>v/n)}
+function qConj(q){return [q[0],-q[1],-q[2],-q[3]]}
+function qMul(a,b){
+  const [aw,ax,ay,az]=a,[bw,bx,by,bz]=b;
+  return [
+    aw*bw-ax*bx-ay*by-az*bz,
+    aw*bx+ax*bw+ay*bz-az*by,
+    aw*by-ax*bz+ay*bw+az*bx,
+    aw*bz+ax*by-ay*bx+az*bw
+  ];
+}
+function qAxis(axis,ang){
+  const h=ang/2,s=Math.sin(h); return [Math.cos(h),axis[0]*s,axis[1]*s,axis[2]*s];
+}
+function qRotate(q,v){
+  const [w,x,y,z]=q, [vx,vy,vz]=v;
+  const tx=2*(y*vz-z*vy), ty=2*(z*vx-x*vz), tz=2*(x*vy-y*vx);
+  return [vx+w*tx+(y*tz-z*ty), vy+w*ty+(z*tx-x*tz), vz+w*tz+(x*ty-y*tx)];
+}
+function qFromUnit(a,b){
+  const dot=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  if(dot<-0.999999){
+    let axis=Math.abs(a[0])<.9?[1,0,0]:[0,1,0];
+    const cx=a[1]*axis[2]-a[2]*axis[1], cy=a[2]*axis[0]-a[0]*axis[2], cz=a[0]*axis[1]-a[1]*axis[0];
+    const n=Math.hypot(cx,cy,cz); return qAxis([cx/n,cy/n,cz/n],Math.PI);
+  }
+  const cx=a[1]*b[2]-a[2]*b[1], cy=a[2]*b[0]-a[0]*b[2], cz=a[0]*b[1]-a[1]*b[0];
+  return qNorm([1+dot,cx,cy,cz]);
+}
+function qSlerp(a,b,t){
+  let dot=a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3];
+  if(dot<0){b=b.map(x=>-x);dot=-dot}
+  if(dot>.9995)return qNorm(a.map((x,i)=>x+t*(b[i]-x)));
+  const th=Math.acos(Math.min(1,dot)), s=Math.sin(th);
+  const w1=Math.sin((1-t)*th)/s, w2=Math.sin(t*th)/s;
+  return a.map((x,i)=>w1*x+w2*b[i]);
+}
+
+let orientation=[1,0,0,0]; // mundo -> cámara
+let targetOrientation=null, animStart=0, animFrom=null, animDur=760;
+let fov=90;
+let projected=[];
+let projectedByStarId=new Map();
+let DPR=1,W=0,H=0;
+
+function undistortedFovLimit(){
+  if(!W || !H) return 90;
+  // Justo antes de que la proyección tenga que recortar el FOV vertical
+  // y empiece a comprimirse únicamente en X.
+  return Math.max(28, Math.min(176, 176*(W/H)));
+}
+function maxFovAllowed(){
+  return (els.limitZoomOut && els.limitZoomOut.checked) ? undistortedFovLimit() : 300;
+}
+
+function resize(){
+  DPR=Math.min(devicePixelRatio||1,2);
+  W=innerWidth;H=innerHeight;
+  canvas.width=Math.round(W*DPR); canvas.height=Math.round(H*DPR);
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  if(typeof fov!=='undefined' && els.limitZoomOut && els.limitZoomOut.checked){
+    fov=Math.min(fov,undistortedFovLimit());
+  }
+}
+addEventListener('resize',resize);resize();
+fov=undistortedFovLimit();
+
+function projectVecRaw(v){
+  const r=qRotate(orientation,v);
+  const yaw=Math.atan2(r[0],r[2]);
+  const pitch=Math.asin(Math.max(-1,Math.min(1,r[1])));
+  const hfov=d2r(fov);
+  const vfov=d2r(Math.min(176, fov*(H/W)));
+  const x=W/2 + (yaw/(hfov/2))*(W/2);
+  const y=H/2 - (pitch/(vfov/2))*(H/2);
+  return {x,y,z:r[2],yaw,pitch,hfov,vfov};
+}
+function projectVec(v){
+  const p=projectVecRaw(v);
+  if(Math.abs(p.yaw)>p.hfov/2 || Math.abs(p.pitch)>p.vfov/2) return null;
+  if(p.x<-80||p.x>W+80||p.y<-80||p.y>H+80)return null;
+  return p;
+}
+function projectVecForLine(v){
+  const p=projectVecRaw(v);
+  if(Math.abs(p.yaw)>p.hfov || Math.abs(p.pitch)>p.vfov) return null;
+  const margin=Math.max(W,H)*0.7;
+  if(p.x<-margin||p.x>W+margin||p.y<-margin||p.y>H+margin) return null;
+  return p;
+}
+function clamp01(x){ return Math.max(0,Math.min(1,x)); }
+function currentFilterVisibilityFactor(s){
+  if(els.visibilityMode.value!=='realistic') return 1;
+  const profile=currentFilterProfile();
+
+  // Sin filtro geográfico seguimos simulando un cielo real, equivalente
+  // aproximadamente a ciudad/periferia: no oculta constelaciones enteras,
+  // pero sí atenúa fuertemente las estrellas débiles.
+  if(!profile){
+    const genericLimitMag=4.25;
+    const mag=Number.isFinite(s.mag) ? s.mag : 5;
+    const magNorm=clamp01((genericLimitMag-mag+.65)/3.4);
+    const brightBoost=clamp01((2.2-mag)/3.5);
+    return Math.max(.035,Math.min(1,.07+.73*magNorm+.20*brightBoost));
+  }
+
+  const info=s.visibilityByFilter?.[profile.key];
+  if(!info) return 1;
+
+  const altNorm=clamp01((info.maxAltDeg-profile.minAltDeg)/(65-profile.minAltDeg));
+  const magNorm=clamp01((profile.limitMag - s.mag + .55)/3.2);
+  const base = profile.skyQuality*(0.58*magNorm + 0.42*altNorm);
+  return Math.max(.08, Math.min(1, .14 + .86*base));
+}
+function starSeed(s){
+  const key=String(s.id||s.name||'estrella');
+  let h=2166136261;
+  for(let i=0;i<key.length;i++){
+    h^=key.charCodeAt(i);
+    h=Math.imul(h,16777619);
+  }
+  return Math.abs(h>>>0);
+}
+function smoothNoise1D(t,period,seed){
+  const x=t/period;
+  const i=Math.floor(x), f=x-i;
+  const u=f*f*(3-2*f);
+  const a=seededRandom(seed + i*17.173)*2-1;
+  const b=seededRandom(seed + (i+1)*17.173)*2-1;
+  return a+(b-a)*u;
+}
+function twinkleStateForStar(s,t){
+  if(!els.starTwinkle.checked) return {alpha:1,size:1,glow:1};
+
+  const freqLevel=+els.twinkleFrequency.value;
+  const intensityLevel=+els.twinkleIntensity.value;
+  if(freqLevel<=0 || intensityLevel<=0) return {alpha:1,size:1,glow:1};
+
+  const seed=starSeed(s);
+  const activity=.45 + .55*seededRandom(seed*.071+31);
+  const brightNorm=clamp01((5.4-(Number.isFinite(s.mag)?s.mag:4))/5.4);
+
+  let horizonBoost=1;
+  const profile=currentFilterProfile();
+  const info=profile ? s.visibilityByFilter?.[profile.key] : null;
+  if(profile && info){
+    const altNorm=clamp01((info.maxAltDeg-profile.minAltDeg)/(70-profile.minAltDeg));
+    horizonBoost=.82 + .72*(1-altNorm);
+  }
+
+  // Misma escala del slider, pero el efecto temporal es 3× más rápido
+  // que en la versión anterior.
+  const speed=3*(.35 + 2.10*(freqLevel/10));
+  const tt=t*speed;
+
+  const p1=150 + 210*seededRandom(seed*.113+7);
+  const p2=430 + 620*seededRandom(seed*.157+19);
+  const n1=smoothNoise1D(tt,p1,seed+101);
+  const n2=smoothNoise1D(tt,p2,seed+401);
+  const n3=Math.sin(tt*(.00065+.00045*seededRandom(seed*.193+5)) + seed*.017);
+  let n=.60*n1+.28*n2+.12*n3;
+  n=Math.max(-1,Math.min(1,n));
+
+  // Intensidad 2/10 ≈ el nivel anterior. A 10/10 se vuelve mucho más obvio.
+  const intensityNorm=intensityLevel/10;
+  const ampScale=.35 + 10.45*intensityNorm; // 2/10 -> parecido al anterior; 10/10 -> mucho más extremo
+  const amp=Math.min(.88, ((.065 + .075*activity + .035*brightNorm)*horizonBoost)*ampScale);
+  const u=(n+1)/2;
+  const alpha=1-amp + amp*u;
+  const size=1 + n*((.006 + .012*activity) + (.004 + .018*activity)*intensityNorm);
+  const glow=1 + n*((.06 + .12*activity) + (.08 + .46*activity)*intensityNorm);
+
+  return {
+    alpha:Math.max(.12,Math.min(1,alpha)),
+    size:Math.max(.88,Math.min(1.18,size)),
+    glow:Math.max(.35,Math.min(2.8,glow))
+  };
+}
+
+let selectedImportantStar=null;
+let projectedImportantStars=[];
+const manualConstellationLabels=new Map();
+let lastManualConstToggle={cid:null,t:0};
+
+function importantStarVisible(s){
+  return currentFilterKey()==='all' || !!s.visibilityByFilter?.[currentFilterKey()]?.visible;
+}
+function importantStarColor(s){
+  const cls=(s.spectral||'A').trim()[0].toUpperCase();
+  return spectralPalette[cls] || currentBaseStarColor();
+}
+
+let starModelLastFrame=-Infinity;
+function hexRgb(hex){
+  const m=String(hex||'#ffffff').trim().match(/^#([0-9a-f]{6})$/i);
+  if(!m) return {r:255,g:255,b:255};
+  const n=parseInt(m[1],16);
+  return {r:(n>>16)&255,g:(n>>8)&255,b:n&255};
+}
+function rgba(rgb,a){
+  return `rgba(${rgb.r},${rgb.g},${rgb.b},${a})`;
+}
+function renderStarSphereModel(t){
+  if(!selectedImportantStar || !els.starInfoPanel.classList.contains('open')) return;
+  if(t-starModelLastFrame<48) return; // ~20 fps is enough for a slow stellar rotation
+  starModelLastFrame=t;
+
+  const c=els.starInfoSphere;
+  const g=c.getContext('2d');
+  const W=c.width,H=c.height,cx=W/2,cy=H/2;
+  const base=hexRgb(importantStarColor(selectedImportantStar));
+  const seed=starSeed(selectedImportantStar);
+
+  g.clearRect(0,0,W,H);
+
+  // Diffuse halo. No sharp luminous rim and no directional highlight.
+  const halo=g.createRadialGradient(cx,cy,25,cx,cy,47);
+  halo.addColorStop(0,rgba(base,.19));
+  halo.addColorStop(.58,rgba(base,.10));
+  halo.addColorStop(1,rgba(base,0));
+  g.fillStyle=halo;
+  g.fillRect(0,0,W,H);
+
+  const radius=31;
+  const img=g.createImageData(W,H);
+  const data=img.data;
+
+  // Surface rotates around an axis tilted 12° in the image plane.
+  const tilt=12*Math.PI/180;
+  const ct=Math.cos(tilt),st=Math.sin(tilt);
+  const phase=t*.00018 + (seed%1000)*.0012;
+
+  const spotLon1=(seededRandom(seed*.017+3)*2-1)*Math.PI;
+  const spotLat1=(seededRandom(seed*.023+7)*2-1)*.65;
+  const spotLon2=(seededRandom(seed*.031+11)*2-1)*Math.PI;
+  const spotLat2=(seededRandom(seed*.043+13)*2-1)*.60;
+  const textureStrength=.055 + .045*seededRandom(seed*.061+17);
+
+  for(let py=0;py<H;py++){
+    for(let px=0;px<W;px++){
+      const dx=(px+.5-cx)/radius;
+      const dy=(py+.5-cy)/radius;
+      const rr=dx*dx+dy*dy;
+      if(rr>=1) continue;
+
+      // Rotate image coordinates so the apparent stellar equator is slightly tilted.
+      const sx= dx*ct + dy*st;
+      const sy=-dx*st + dy*ct;
+      const sz=Math.sqrt(Math.max(0,1-sx*sx-sy*sy));
+
+      const lon=Math.atan2(sx,sz)+phase;
+      const lat=Math.asin(Math.max(-1,Math.min(1,sy)));
+
+      // Granulación suave: textura irregular pero sin "rayas" ni zigzags marcados.
+      const grain=
+          .46*Math.sin(lon*8.9 + Math.sin(lat*4.8)*0.95 + seed*.0031)
+        + .24*Math.sin((lon+lat)*6.2 + seed*.0053)
+        + .16*Math.sin(lon*4.6 - lat*5.7 + Math.sin((lon-lat)*1.6))
+        + .08*Math.sin((lon*2.4 + lat*3.3) + seed*.0091);
+
+      // A couple of broad, very subtle dark irregularities that move with the sphere.
+      function angularSpot(sl,sa,size){
+        let dl=lon-sl;
+        while(dl>Math.PI)dl-=2*Math.PI;
+        while(dl<-Math.PI)dl+=2*Math.PI;
+        const d2=(dl*Math.cos(lat))**2 + (lat-sa)**2;
+        return Math.exp(-d2/(2*size*size));
+      }
+      const spots=.12*angularSpot(spotLon1,spotLat1,.19)+.075*angularSpot(spotLon2,spotLat2,.14);
+
+      // Limb darkening: slightly darker near the edge, homogeneous illumination.
+      const limb=.57+.43*Math.pow(sz,.58);
+      let lum=limb*(1 + textureStrength*grain - spots);
+      lum=Math.max(.30,Math.min(1.13,lum));
+
+      // Feather the final few pixels so the star merges into its halo.
+      const radial=Math.sqrt(rr);
+      const edge=radial<.92 ? 1 : Math.max(0,(1-radial)/.08);
+      const alpha=Math.round(255*edge);
+
+      const idx=(py*W+px)*4;
+      data[idx]=Math.min(255,Math.round(base.r*lum));
+      data[idx+1]=Math.min(255,Math.round(base.g*lum));
+      data[idx+2]=Math.min(255,Math.round(base.b*lum));
+      data[idx+3]=alpha;
+    }
+  }
+  g.putImageData(img,0,0);
+}
+function openImportantStarPanel(s){
+  selectedImportantStar=s;
+  els.starInfoName.textContent=s.name;
+  const dist=Number.isFinite(s.distanceLy)
+    ? `${s.distanceLy.toLocaleString('es-ES',{maximumFractionDigits:1})} años luz`
+    : 'distancia no disponible';
+  els.starInfoMeta.textContent=`${s.constellation} · mag ${s.mag>0?'+':''}${s.mag.toFixed(2)} · ${s.spectral} · ${dist}`;
+  els.starInfoDesc.textContent=s.description;
+  els.starInfoPanel.classList.add('open');
+  starModelLastFrame=-Infinity;
+  renderStarSphereModel(performance.now());
+}
+function closeImportantStarPanel(){
+  selectedImportantStar=null;
+  els.starInfoPanel.classList.remove('open');
+}
+function nearestImportantStar(x,y,maxDist=20){
+  let best=null,bestD=maxDist;
+  for(const p of projectedImportantStars){
+    const d=Math.hypot(x-p.x,y-p.y);
+    if(d<bestD){bestD=d;best=p.s;}
+  }
+  return best;
+}
+function drawImportantStars(t){
+  projectedImportantStars=[];
+  if(!els.showImportantStars.checked) return;
+
+  ctx.save();
+  for(const s of IMPORTANT_STAR_DATA){
+    if(!importantStarVisible(s)) continue;
+    const p=projectVec(s.v); if(!p) continue;
+
+    const realistic=currentFilterVisibilityFactor(s);
+    const tw=twinkleStateForStar(s,t);
+    const r=magRadius(s.mag)*(els.visibilityMode.value==='realistic' ? (.84+.2*realistic) : 1)*tw.size;
+
+    ctx.globalAlpha=Math.max(.08,Math.min(1,(els.visibilityMode.value==='realistic'?realistic:1)*tw.alpha));
+    drawStar(p.x,p.y,r,s,false,false,tw.glow);
+    ctx.globalAlpha=1;
+
+    const ring=Math.max(7.5,r+4.5);
+    ctx.strokeStyle=importantStarColor(s);
+    ctx.lineWidth=1.1;
+    ctx.globalAlpha=.52;
+    ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(p.x,p.y,ring,0,Math.PI*2);ctx.stroke();
+
+    if(selectedImportantStar===s){
+      ctx.globalAlpha=.98;
+      ctx.lineWidth=1.8;
+      ctx.setLineDash([5,4]);
+      ctx.lineDashOffset=-(t/95);
+      ctx.beginPath();ctx.arc(p.x,p.y,ring+6,0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    if(els.showImportantStarNames.checked){
+      ctx.globalAlpha=.90;
+      ctx.font='600 11px system-ui';
+      ctx.fillStyle=els.themeMode.value==='light' ? '#111827' : '#f2f5ff';
+      ctx.textAlign='left';
+      ctx.textBaseline='middle';
+      ctx.fillText(s.name,p.x+ring+4,p.y-1);
+    }
+    projectedImportantStars.push({s,x:p.x,y:p.y,r:ring});
+  }
+  ctx.restore();
+}
+
+function toggleManualConstellationLabelAt(x,y){
+  if(game.mode!=='explore') return false;
+  if(nearestImportantStar(x,y,20)) return false;
+
+  const ids=currentExploreConstellations()
+    .filter(constellationVisibleInFilter)
+    .map(c=>c.id);
+  const cid=constellationHitTest(x,y,ids);
+  if(!cid) return false;
+
+  const now=performance.now();
+  if(lastManualConstToggle.cid===cid && now-lastManualConstToggle.t<260){
+    return true;
+  }
+  lastManualConstToggle={cid,t:now};
+
+  if(manualConstellationLabels.has(cid)){
+    manualConstellationLabels.delete(cid);
+    return true;
+  }
+  const expires=els.manualConstLabelMode.value==='fade' ? performance.now()+5200 : Infinity;
+  manualConstellationLabels.set(cid,{expires,created:performance.now()});
+  return true;
+}
+function drawManualConstellationLabels(t){
+  if(game.mode!=='explore' || !manualConstellationLabels.size) return;
+
+  ctx.save();
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.font='650 13px system-ui';
+
+  for(const [cid,state] of [...manualConstellationLabels.entries()]){
+    if(t>=state.expires){
+      manualConstellationLabels.delete(cid);
+      continue;
+    }
+    const c=getSkyConstellation(cid);
+    if(!c || !constellationVisibleInFilter(c)) continue;
+    const cent=filteredConstellationCentroid(c); if(!cent) continue;
+    const p=projectVec(cent); if(!p) continue;
+
+    let alpha=1;
+    if(Number.isFinite(state.expires)){
+      const remaining=state.expires-t;
+      if(remaining<1200) alpha=clamp01(remaining/1200);
+    }
+
+    const label=displayConstellationName(c);
+    const w=ctx.measureText(label).width;
+    const x=p.x,y=p.y-22;
+    ctx.globalAlpha=.68*alpha;
+    ctx.fillStyle=els.themeMode.value==='light' ? 'rgba(255,255,255,.92)' : 'rgba(5,8,14,.78)';
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(x-w/2-8,y-10,w+16,20,8);
+    else ctx.rect(x-w/2-8,y-10,w+16,20);
+    ctx.fill();
+    ctx.globalAlpha=.95*alpha;
+    ctx.fillStyle=els.themeMode.value==='light' ? '#111827' : '#f5f7ff';
+    ctx.fillText(label,x,y);
+  }
+  ctx.restore();
+}
+function magRadius(mag){
+  const mode=els.sizeMode.value;
+  if(mode==='uniform')return 2.2;
+  // El antiguo tamaño "realista" pasa a ser el pedagógico.
+  if(mode==='pedagogic')return Math.max(.7, 4.25*Math.pow(10,-0.075*mag));
+  // Realista: aproximadamente la mitad, con contraste visual mucho menor.
+  return Math.max(.36, 2.12*Math.pow(10,-0.075*mag));
+}
+function currentSkyBg(){
+  if(els.themeMode.value==='light') return '#ffffff';
+  if(els.themeMode.value==='dark') return '#000000';
+  return els.bgColor.value;
+}
+function currentBaseStarColor(){
+  if(els.themeMode.value==='light') return '#000000';
+  if(els.themeMode.value==='dark') return '#ffffff';
+  return els.starColor.value;
+}
+function starColorFor(s){
+  if(typeof game!=='undefined' && game.mode==='learning'){
+    const L=game.learning;
+    if(L && L.flashConst===s.c && performance.now()<L.flashUntil){
+      const c=getSkyConstellation(s.c);
+      return c ? c.color : '#8fb7ff';
+    }
+    // En Aprendizaje las figuras empiezan deliberadamente neutras y atenuadas.
+    return currentBaseStarColor();
+  }
+  if(!els.spectralColors.checked || !s.spectral) return currentBaseStarColor();
+  return spectralPalette[s.spectral[0]] || currentBaseStarColor();
+}
+function updateThemeControls(){
+  const custom=els.themeMode.value==='custom';
+  els.customBgRow.style.display=custom?'flex':'none';
+  els.customStarRow.style.display=custom?'flex':'none';
+}
+function starPointsForMagnitude(mag){
+  if(mag<=1.15) return 4;
+  if(mag<=2.25) return 6;
+  if(mag<=3.65) return 8;
+  return 10;
+}
+function burstPath(points,outer,inner,rotation=-Math.PI/2){
+  ctx.beginPath();
+  for(let i=0;i<points*2;i++){
+    const a=rotation+i*Math.PI/points;
+    const rr=(i%2===0)?outer:inner;
+    const x=Math.cos(a)*rr,y=Math.sin(a)*rr;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+}
+function drawStar(x,y,r,s,isSelected,isFocus,twinkleGlow=1){
+  const mag=s.mag;
+  const color=starColorFor(s);
+  ctx.save();
+  if(isSelected){ctx.shadowBlur=14*twinkleGlow;ctx.shadowColor='#5fe394';ctx.fillStyle='#5fe394'}
+  else {ctx.shadowBlur=Math.max(0,7-r*.7)*twinkleGlow;ctx.shadowColor=color;ctx.fillStyle=color}
+  const style=els.starStyle.value;
+
+  if(style==='circles'){
+    const rr=r*1.12;
+    ctx.beginPath();ctx.arc(x,y,rr,0,Math.PI*2);ctx.fill();
+  }else if(style==='mixed'){
+    if(mag>1.6){
+      ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    }else{
+      ctx.translate(x,y);
+      burstPath(4,r*2.8,r*.62);ctx.fill();
+      ctx.beginPath();ctx.arc(0,0,r*.72,0,Math.PI*2);ctx.fill();
+    }
+  }else if(style==='classic'){
+    ctx.translate(x,y);
+    const pts=starPointsForMagnitude(mag);
+    const outer=r*(pts===4?2.9:pts===6?2.25:pts===8?1.88:1.65);
+    const inner=r*(pts===4?.60:pts===6?.55:.50);
+    burstPath(pts,outer,inner);ctx.fill();
+    ctx.beginPath();ctx.arc(0,0,r*.56,0,Math.PI*2);ctx.fill();
+  }else{
+    ctx.translate(x,y);
+    const pts=starPointsForMagnitude(mag);
+    const seed=s.name.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+    const rot=-Math.PI/2+(seed%7)*.08;
+    const stretch=1+((seed%5)-2)*.055;
+    ctx.save();ctx.scale(stretch,1/stretch);
+    burstPath(pts,r*(pts<=4?3.15:2.0),r*(pts<=4?.52:.42),rot);ctx.fill();
+    ctx.restore();
+    if(mag<2.3){ctx.beginPath();ctx.arc(0,0,r*.62,0,Math.PI*2);ctx.fill()}
+  }
+
+  // En tema claro, las clases espectrales blancas/azuladas pueden confundirse
+  // con el fondo. Un contorno muy fino conserva el color sin hacerlas invisibles.
+  if(els.themeMode.value==='light' && els.spectralColors.checked && s.spectral){
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(0,0,0,.38)';
+    ctx.lineWidth=.55;
+    if(style==='circles'){
+      const rr=r*1.12;
+      ctx.beginPath();ctx.arc(x,y,rr,0,Math.PI*2);ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  if(isFocus){
+    ctx.save();ctx.strokeStyle='#ffd66b';ctx.lineWidth=2;ctx.setLineDash([5,5]);
+    ctx.beginPath();ctx.arc(x,y,Math.max(13,r+10),0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
+}
+function seededRandom(n){
+  let x=Math.sin(n*12.9898+78.233)*43758.5453; return x-Math.floor(x);
+}
+const bgStars=[];
+for(let i=0;i<900;i++){
+  const u=seededRandom(i*2+1), v=seededRandom(i*2+2);
+  const z=2*u-1, a=2*Math.PI*v, rr=Math.sqrt(1-z*z);
+  const br=seededRandom(i+800);
+  const obj={name:'fondo'+i,v:[rr*Math.cos(a),z,rr*Math.sin(a)],mag:2.8+3.9*Math.pow(br,.35),spectral:null};
+  obj.visibilityByFilter=computeBgFilterMetrics(obj.v);
+  bgStars.push(obj);
+}
+function drawBackground(t=performance.now()){
+  const n=+els.backgroundDensity.value;
+  const visibility=+els.backgroundVisibility.value/100;
+  const alpha=.025+visibility*.72;
+  const scale=.42+visibility*.82;
+  const profile=currentFilterProfile();
+  const driftX=startupMenuOpen ? Math.sin(t*0.00008)*10.0 : 0;
+  const driftY=startupMenuOpen ? Math.cos(t*0.00007)*7.0 : 0;
+  ctx.save();
+  for(let i=0;i<n;i++){
+    const s=bgStars[i]; if(!starPassesSkyFilter(s))continue;
+    const p=projectVec(s.v); if(!p)continue;
+    const vis=currentFilterVisibilityFactor(s);
+    const tw=twinkleStateForStar(s,t);
+    let r=Math.max(.35,magRadius(s.mag)*.48)*scale*(els.visibilityMode.value==='realistic' ? (.78+.28*vis) : 1)*tw.size;
+    const col=currentBaseStarColor();
+    const px=p.x+driftX, py=p.y+driftY;
+    ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=Math.max(0,(.25+r*.28)*(tw.glow-1));
+    ctx.globalAlpha=Math.max(.02, Math.min(1, alpha*(els.visibilityMode.value==='realistic' ? vis : 1)*tw.alpha));
+    const style=els.starStyle.value;
+    if(style==='classic' || style==='icons'){
+      ctx.save();ctx.translate(px,py);
+      const pts=starPointsForMagnitude(s.mag);
+      burstPath(pts,r*(pts>=8?1.55:1.8),r*.45,-Math.PI/2+(i%5)*.05);
+      ctx.fill();ctx.restore();
+    }else{
+      ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  if(els.skyHeterogeneity?.checked){
+    ctx.save();
+    const light = els.themeMode.value==='light';
+    const baseA = startupMenuOpen ? .22 : .06;
+    const cols = light ? ['rgba(255,255,255,','rgba(225,235,255,'] : ['rgba(95,125,195,','rgba(188,212,255,'];
+    const blobs=[
+      {x:.22+.03*Math.sin(t*0.00011), y:.24+.03*Math.cos(t*0.00009), r:.36, a:baseA},
+      {x:.76+.04*Math.cos(t*0.00008), y:.34+.02*Math.sin(t*0.00012), r:.28, a:baseA*.72},
+      {x:.56+.02*Math.sin(t*0.00013), y:.74+.03*Math.cos(t*0.00010), r:.31, a:baseA*.62},
+    ];
+    blobs.forEach((b,idx)=>{
+      const g=ctx.createRadialGradient(W*b.x,H*b.y,0,W*b.x,H*b.y,Math.max(W,H)*b.r);
+      g.addColorStop(0, cols[idx%2]+b.a+')');
+      g.addColorStop(.45, cols[(idx+1)%2]+(b.a*.42)+')');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle=g;
+      ctx.fillRect(0,0,W,H);
+    });
+    ctx.restore();
+  }
+}
+function drawGreatCircle(type,color){
+  ctx.save();ctx.strokeStyle=color;ctx.globalAlpha=.48;ctx.lineWidth=1;
+  let prev=null;
+  for(let i=0;i<=240;i++){
+    const lam=2*Math.PI*i/240;
+    let v;
+    if(type==='equator') v=[Math.cos(lam),0,Math.sin(lam)];
+    else{
+      const e=d2r(23.4393);
+      // eclíptica -> ecuatorial, usando x como equinoccio.
+      v=[Math.cos(lam),Math.sin(lam)*Math.sin(e),Math.sin(lam)*Math.cos(e)];
+    }
+    const p=projectVec(v);
+    if(!p){prev=null;continue}
+    if(prev && Math.hypot(p.x-prev.x,p.y-prev.y)<80){
+      ctx.beginPath();ctx.moveTo(prev.x,prev.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+    }
+    prev=p;
+  }
+  ctx.restore();
+}
+function drawCartographicGrid(){
+  const light = els.themeMode.value==='light';
+  const color = light ? 'rgba(0,0,0,.16)' : 'rgba(255,255,255,.18)';
+  ctx.save();
+  ctx.strokeStyle=color;
+  ctx.lineWidth=+(els.gridThickness?.value || 1.75);
+  ctx.setLineDash([3,5]);
+
+  // Meridianos de AR cada 2 horas
+  for(let h=0; h<24; h+=2){
+    let prev=null;
+    for(let dec=-86; dec<=86; dec+=2){
+      const a=d2r(h*15), d=d2r(dec);
+      const v=[Math.cos(d)*Math.cos(a), Math.sin(d), Math.cos(d)*Math.sin(a)];
+      const p=projectVec(v);
+      if(!p){prev=null; continue;}
+      if(prev && Math.hypot(p.x-prev.x,p.y-prev.y)<90){
+        ctx.beginPath(); ctx.moveTo(prev.x,prev.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+      }
+      prev=p;
+    }
+  }
+
+  // Paralelos de declinación cada 30º
+  for(let dec=-60; dec<=60; dec+=30){
+    let prev=null;
+    const d=d2r(dec);
+    for(let i=0; i<=240; i++){
+      const a=d2r(i*1.5);
+      const v=[Math.cos(d)*Math.cos(a), Math.sin(d), Math.cos(d)*Math.sin(a)];
+      const p=projectVec(v);
+      if(!p){prev=null; continue;}
+      if(prev && Math.hypot(p.x-prev.x,p.y-prev.y)<90){
+        ctx.beginPath(); ctx.moveTo(prev.x,prev.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+      }
+      prev=p;
+    }
+  }
+
+    // Etiquetas de los polos celestes
+  const labelColor = light ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)';
+  ctx.setLineDash([]);
+  ctx.fillStyle=labelColor;
+  ctx.font='700 16px system-ui';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+
+  const northPole = projectVec([0,1,0]);
+  if(northPole){
+    // Desplazamos la "N" ~5 px desde Polaris, pero en dirección hacia Casiopea,
+    // para evitar el solape y mantenerla sobre ese segmento visual.
+    const polarisRa=d2r(2.53019*15), polarisDec=d2r(89.2642);
+    const polarisVec=[
+      Math.cos(polarisDec)*Math.cos(polarisRa),
+      Math.sin(polarisDec),
+      Math.cos(polarisDec)*Math.sin(polarisRa)
+    ];
+    const polarisP=projectVec(polarisVec);
+    let anchorX=northPole.x, anchorY=northPole.y;
+    if(polarisP){ anchorX=polarisP.x; anchorY=polarisP.y; }
+
+    let ox=5, oy=0;
+    const cas=getSkyConstellation('Cas');
+    if(polarisP && cas){
+      let best=null, bestD=1e9;
+      for(const s of cas.stars){
+        const p=projectVec(s.v); if(!p) continue;
+        const d=(p.x-polarisP.x)**2 + (p.y-polarisP.y)**2;
+        if(d<bestD){ bestD=d; best=p; }
+      }
+      if(best){
+        let dx=best.x-polarisP.x, dy=best.y-polarisP.y;
+        const dn=Math.hypot(dx,dy);
+        if(dn>.2){ dx/=dn; dy/=dn; ox=dx*5; oy=dy*5; }
+      }
+    }
+    ctx.fillText('N', anchorX+ox, anchorY+oy);
+  }
+
+  const southPole = projectVec([0,-1,0]);
+  if(southPole) ctx.fillText('S', southPole.x, southPole.y);
+
+  ctx.restore();
+}
+function constellationVisibleInFilter(c){
+  const key=currentFilterKey();
+  if(key==='all') return true;
+  if(c.wholeVisibleByFilter && typeof c.wholeVisibleByFilter[key]==='boolean') return c.wholeVisibleByFilter[key];
+  const profile=currentFilterProfile();
+  return wholeConstellationVisibleForProfile(c.stars,profile);
+}
+function figureStarPassesSkyFilter(s){
+  if(currentFilterKey()==='all') return true;
+  const c=getSkyConstellation(s.c);
+  return c ? constellationVisibleInFilter(c) : starPassesSkyFilter(s);
+}
+function filteredConstellationCentroid(c){
+  if(!constellationVisibleInFilter(c)) return null;
+  const arr = c.stars;
+  if(!arr.length) return null;
+  let v=[0,0,0];
+  arr.forEach(s=>{v[0]+=s.v[0];v[1]+=s.v[1];v[2]+=s.v[2];});
+  const n=Math.hypot(...v)||1;
+  return v.map(x=>x/n);
+}
+
+function getSkyConstellation(id){
+  return currentExploreConstellations().find(c=>c.id===id) || null;
+}
+function learningConstellations(){
+  if(typeof game==='undefined' || !game.learning) return [];
+  return game.learning.active.map(getSkyConstellation).filter(Boolean);
+}
+function learningStars(){
+  const out=[];
+  for(const c of learningConstellations()){
+    if(!constellationVisibleInFilter(c)) continue;
+    // Integridad de figura: si la constelación está en juego, se dibuja COMPLETA.
+    out.push(...c.stars);
+  }
+  return out;
+}
+function angularDistance(a,b){
+  const dot=Math.max(-1,Math.min(1,a[0]*b[0]+a[1]*b[1]+a[2]*b[2]));
+  return Math.acos(dot);
+}
+function shuffled(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function learningDisplayName(id){
+  const c=getSkyConstellation(id);
+  return c ? displayConstellationName(c) : id;
+}
+function learningPulse(id,t=performance.now()){
+  const L=game.learning;
+  if(!L || els.learningCueMode.value!=='pulse') return 0;
+  if(!L.newIds.includes(id) || L.mastered.has(id)) return 0;
+  // Pulso suave: 0 → 1 → 0, aproximadamente cada 1,25 s.
+  return .5 + .5*Math.sin(t/200);
+}
+
+function pointSegDist(px,py,ax,ay,bx,by){
+  const vx=bx-ax, vy=by-ay;
+  const wx=px-ax, wy=py-ay;
+  const vv=vx*vx+vy*vy;
+  if(vv<1e-6) return Math.hypot(px-ax,py-ay);
+  let t=(wx*vx+wy*vy)/vv;
+  t=Math.max(0,Math.min(1,t));
+  const cx=ax+t*vx, cy=ay+t*vy;
+  return Math.hypot(px-cx,py-cy);
+}
+function convexHull(points){
+  if(points.length<=2) return points.slice();
+  const pts=[...points].sort((a,b)=>a.x===b.x?a.y-b.y:a.x-b.x);
+  const cross=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+  const lower=[];
+  for(const p of pts){
+    while(lower.length>=2 && cross(lower[lower.length-2],lower[lower.length-1],p)<=0) lower.pop();
+    lower.push(p);
+  }
+  const upper=[];
+  for(let i=pts.length-1;i>=0;i--){
+    const p=pts[i];
+    while(upper.length>=2 && cross(upper[upper.length-2],upper[upper.length-1],p)<=0) upper.pop();
+    upper.push(p);
+  }
+  lower.pop(); upper.pop();
+  return lower.concat(upper);
+}
+function pointInPolygon(x,y,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i].x, yi=poly[i].y;
+    const xj=poly[j].x, yj=poly[j].y;
+    const intersect=((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/((yj-yi)||1e-9)+xi);
+    if(intersect) inside=!inside;
+  }
+  return inside;
+}
+function constellationHitTest(x,y,constellationIds,opts={}){
+  let best=null;
+
+  for(const cid of constellationIds){
+    const c=getSkyConstellation(cid);
+    if(!c) continue;
+
+    const visibleStars=c.stars
+      .map(s=>projectedByStarId.get(s.id))
+      .filter(Boolean);
+
+    if(!visibleStars.length) continue;
+
+    // 1) Estrellas: generosas, pero locales.
+    let minStar=Infinity;
+    for(const p of visibleStars){
+      minStar=Math.min(minStar, Math.hypot(x-p.x,y-p.y) - Math.max(13,p.r+11));
+    }
+
+    // 2) Líneas: una banda algo más generosa y con extremos fuera de pantalla.
+    let minSeg=Infinity;
+    for(const seg of c.segments){
+      const sa=c.stars[seg.a], sb=c.stars[seg.b];
+      if(!sa || !sb) continue;
+      const pa=projectVecForLine(sa.v), pb=projectVecForLine(sb.v);
+      if(!pa || !pb) continue;
+      if(Math.abs(pa.x-pb.x)>W*1.25 || Math.abs(pa.y-pb.y)>H*1.25) continue;
+      minSeg=Math.min(minSeg, pointSegDist(x,y,pa.x,pa.y,pb.x,pb.y)-15);
+    }
+
+    // 3) Interior: SOLO figuras que el propio trazado cierra de verdad.
+    // Esto evita que constelaciones largas como Erídano creen un enorme
+    // "casco convexo" invisible que se coma a Horno y otras vecinas.
+    let insideClosed=false;
+    let closedScore=Infinity;
+
+    for(const path of (c.paths||[])){
+      if(path.length<4 || path[0]!==path[path.length-1]) continue;
+
+      const poly=[];
+      let valid=true;
+      for(let i=0;i<path.length-1;i++){
+        const s=c.stars[path[i]];
+        const p=s ? projectedByStarId.get(s.id) : null;
+        if(!p){valid=false;break;}
+        poly.push({x:p.x,y:p.y});
+      }
+      if(!valid || poly.length<3) continue;
+
+      // Si alguna arista salta por la costura, no tratamos ese camino como polígono.
+      for(let i=0;i<poly.length;i++){
+        const a=poly[i], b=poly[(i+1)%poly.length];
+        if(Math.hypot(a.x-b.x,a.y-b.y)>W*.52){valid=false;break;}
+      }
+      if(!valid) continue;
+
+      if(pointInPolygon(x,y,poly)){
+        insideClosed=true;
+        let edge=Infinity;
+        for(let i=0;i<poly.length;i++){
+          const a=poly[i], b=poly[(i+1)%poly.length];
+          edge=Math.min(edge,pointSegDist(x,y,a.x,a.y,b.x,b.y));
+        }
+        closedScore=Math.min(closedScore,-12-Math.min(10,edge*.12));
+      }
+    }
+
+    const qualifies = insideClosed || minSeg<=22 || minStar<=28;
+    if(!qualifies) continue;
+
+    let score = insideClosed ? closedScore : Math.min(minSeg,minStar);
+
+    // En juego conviene favorecer ligeramente la constelación que se está pidiendo
+    // y penalizar un poco las ya consolidadas, para evitar falsos positivos
+    // cuando varias figuras quedan próximas o se rozan.
+    if(opts.preferId===cid) score-=7;
+    if(opts.deprioritizeIds && opts.deprioritizeIds.has && opts.deprioritizeIds.has(cid)) score+=5;
+
+    if(!best || score<best.score){
+      best={id:cid,score,minSeg,minStar,insideClosed};
+    }
+  }
+
+  return best ? best.id : null;
+}
+
+function shouldDrawLines(){
+  if(game.mode==='identify') return false;
+  return (game.mode==='explore' || game.mode==='locate') ? els.showLines.checked : els.gameLines.checked;
+}
+function drawConstellationLines(){
+  if(!shouldDrawLines())return;
+  ctx.save();ctx.lineWidth=1.05;ctx.globalAlpha=.48;
+
+  if(game.mode==='explore' || game.mode==='locate'){
+    for(const c of currentExploreConstellations()){
+      if(!constellationVisibleInFilter(c)) continue;
+      ctx.strokeStyle=lineColorForConstellation(c);
+      for(const seg of c.segments){
+        const sa=c.stars[seg.a], sb=c.stars[seg.b];
+        if(!sa || !sb) continue;
+        const pa=projectVecForLine(sa.v), pb=projectVecForLine(sb.v); if(!pa || !pb) continue;
+        if(Math.abs(pa.x-pb.x)>W*1.25 || Math.abs(pa.y-pb.y)>H*1.25) continue;
+        ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+      }
+    }
+    ctx.restore();
+    return;
+  }
+
+  if(game.mode==='learning'){
+    const now=performance.now();
+    for(const c of learningConstellations()){
+      const flashing=game.learning.flashConst===c.id && now<game.learning.flashUntil;
+      const isMastered=game.learning.mastered.has(c.id);
+      const remembered=els.learningKeepColors.checked && isMastered;
+      const pulse=learningPulse(c.id,now);
+      const thickMastered=els.learningCueMode.value==='thick' && isMastered;
+
+      const paletteColor=lineColorForConstellation(c);
+      ctx.strokeStyle=(flashing || remembered) ? paletteColor : currentBaseStarColor();
+      ctx.globalAlpha=flashing ? .96 : pulse>0 ? (.35+.62*pulse) : remembered ? .82 : .52;
+      ctx.lineWidth=flashing ? 1.8 : thickMastered ? 2.7 : pulse>0 ? (1.05+.7*pulse) : remembered ? 1.45 : 1.05;
+      for(const seg of c.segments){
+        const sa=c.stars[seg.a], sb=c.stars[seg.b];
+        if(!sa || !sb) continue;
+        const pa=projectVecForLine(sa.v), pb=projectVecForLine(sb.v); if(!pa || !pb) continue;
+        if(Math.abs(pa.x-pb.x)>W*1.25 || Math.abs(pa.y-pb.y)>H*1.25) continue;
+        ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.stroke();
+      }
+    }
+    ctx.restore();
+    return;
+  }
+
+  let legacyIndex=0;
+  for(const [c,edges] of Object.entries(lines)){
+    ctx.strokeStyle=lineColorForConstellation({id:c,color:C[c].color,label:C[c].label});
+    for(const [a,b] of edges){
+      const sa=byName.get(a), sb=byName.get(b); if(!sa||!sb)continue;
+      const pa=projectVecForLine(sa.v),pb=projectVecForLine(sb.v);if(!pa||!pb)continue;
+      if(Math.abs(pa.x-pb.x)>W*1.25 || Math.abs(pa.y-pb.y)>H*1.25)continue;
+      ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.stroke();
+    }
+    legacyIndex++;
+  }
+  ctx.restore();
+}
+function centroidOf(c){
+  const arr=stars.filter(s=>s.c===c && s.core);
+  let v=[0,0,0];
+  arr.forEach(s=>{v[0]+=s.v[0];v[1]+=s.v[1];v[2]+=s.v[2]});
+  const n=Math.hypot(...v);return v.map(x=>x/n);
+}
+let constellationLabelHits=[];
+function drawLabels(){
+  constellationLabelHits=[];
+  ctx.save();ctx.textAlign='center';
+  const labelColor = els.themeMode.value==='light' ? '#273249' : '#bfc9dd';
+  const starLabelColor = els.themeMode.value==='light' ? '#1d2433' : '#dfe6f5';
+
+  if(els.showConstNames.checked && game.mode==='explore'){
+    ctx.font='600 12px system-ui';ctx.fillStyle=labelColor;ctx.globalAlpha=.72;
+    for(const c of currentExploreConstellations()){
+      if(!constellationVisibleInFilter(c)) continue;
+      const cent=filteredConstellationCentroid(c); if(!cent) continue;
+      const p=projectVec(cent); if(!p) continue;
+      const label=displayConstellationName(c);
+      ctx.fillText(label,p.x,p.y-18);
+      const w=ctx.measureText(label).width;
+      constellationLabelHits.push({x:p.x-w/2-8,y:p.y-32,w:w+16,h:22,c});
+    }
+  }
+  if(els.showStarNames.checked && game.mode==='explore'){
+    // En exploración seguimos nombrando solo el subconjunto de estrellas principales conocidas,
+    // para no llenar el cielo de etiquetas anónimas.
+    ctx.font='11px system-ui';ctx.fillStyle=starLabelColor;ctx.textAlign='left';ctx.globalAlpha=.82;
+    for(const s of stars){
+      if(!figureStarPassesSkyFilter(s)) continue;
+      const p=projectVec(s.v); if(!p) continue;
+      if(s.mag>3.2) continue;
+      ctx.fillText(s.name,p.x+7,p.y-5);
+    }
+  }
+  ctx.restore();
+}
+function render(t){
+  const dt = lastRenderT ? Math.min(50, Math.max(0, t - lastRenderT)) : 16;
+  lastRenderT = t;
+
+  if(startupMenuOpen && !targetOrientation){
+    // Desplazamiento lento pero perceptible del cielo de portada.
+    const yaw = 0.00013 * dt;
+    const pitch = 0.000055 * dt * Math.sin(t*0.00023);
+    const qy=qAxis([0,1,0],-yaw);
+    const qx=qAxis([1,0,0],pitch);
+    orientation=qNorm(qMul(qx,qMul(qy,orientation)));
+  }
+
+  if(targetOrientation){
+    const p=Math.min(1,(t-animStart)/animDur), e=1-Math.pow(1-p,3);
+    orientation=qSlerp(animFrom,targetOrientation,e);
+    if(p>=1)targetOrientation=null;
+  }
+  const skyBg=currentSkyBg(), baseStar=currentBaseStarColor();
+  document.documentElement.style.setProperty('--bg',skyBg);
+  document.documentElement.style.setProperty('--star',baseStar);
+  ctx.fillStyle=skyBg;ctx.fillRect(0,0,W,H);
+
+  if(game.mode!=='learning') drawBackground(t);
+  if(!startupMenuOpen){
+    if(els.showGrid.checked)drawCartographicGrid();
+    if(els.showEquator.checked)drawGreatCircle('equator','#7cb0ff');
+    if(els.showEcliptic.checked)drawGreatCircle('ecliptic','#ffd36c');
+    drawConstellationLines();
+  }
+
+  projected=[];
+  projectedByStarId.clear();
+  const starSet =
+    (game.mode==='explore' || game.mode==='locate' || game.mode==='identify') ? currentExploreStars() :
+    game.mode==='learning' ? learningStars() :
+    stars;
+  for(const s of starSet){
+    const isFigureMode=(game.mode==='explore'||game.mode==='learning'||game.mode==='locate'||game.mode==='identify');
+    if(isFigureMode ? !figureStarPassesSkyFilter(s) : !starPassesSkyFilter(s)) continue;
+    const p=projectVec(s.v);if(!p)continue;
+    const r=magRadius(s.mag);
+    projected.push({s,x:p.x,y:p.y,r});
+    projectedByStarId.set(s.id,{s,x:p.x,y:p.y,r});
+    const realistic=currentFilterVisibilityFactor(s);
+    const tw=twinkleStateForStar(s,t);
+    if(game.mode==='learning'){
+      const flashing=game.learning.flashConst===s.c && t<game.learning.flashUntil;
+      const pulse=learningPulse(s.c,t);
+      // Aprendizaje debe ser legible aunque Visibilidad esté en Realista:
+      // aquí no aplicamos la atenuación de cielo urbano genérico.
+      const baseAlpha = flashing ? 1 : pulse>0 ? (.42+.58*pulse) : .72;
+      ctx.globalAlpha=Math.max(.30, Math.min(1, baseAlpha*tw.alpha));
+      drawStar(
+        p.x,p.y,
+        r*(pulse>0 ? 1+.16*pulse : 1)*tw.size,
+        s,false,false,tw.glow
+      );
+      ctx.globalAlpha=1;
+    }else{
+      ctx.globalAlpha=Math.max(.05, Math.min(1, (els.visibilityMode.value==='realistic' ? realistic : 1)*tw.alpha));
+      drawStar(
+        p.x,p.y,
+        r*(els.visibilityMode.value==='realistic' ? (.84+.2*realistic) : 1)*tw.size,
+        s,game.selected.has(s.id),game.focusStar===s.id,tw.glow
+      );
+      ctx.globalAlpha=1;
+    }
+  }
+  if(!startupMenuOpen){
+    drawImportantStars(t);
+    drawIdentifyFocus(t);
+    drawLabels();
+    drawManualConstellationLabels(t);
+  }
+  renderStarSphereModel(t);
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+
+// ---------- Interacción de esfera ----------
+const pointers=new Map();
+let lastPinch=null, lastTwoCenter=null, lastTwoAngle=null, moved=false;
+let longPressTimer=null, longPressFired=false, longPressOrigin=null;
+function cancelLongPress(){
+  if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}
+}
+function toggleLinesByLongPress(){
+  if(game.mode==='explore'){
+    els.showLines.checked=!els.showLines.checked;
+    toast(els.showLines.checked?'Líneas visibles':'Líneas ocultas');
+  }else{
+    els.gameLines.checked=!els.gameLines.checked;
+    toast(els.gameLines.checked?'Líneas visibles':'Líneas ocultas');
+  }
+  longPressFired=true;
+  if(navigator.vibrate) navigator.vibrate(18);
+}
+canvas.addEventListener('pointerdown',e=>{
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY});
+  moved=false;longPressFired=false;
+  cancelLongPress();
+
+  if(pointers.size===1){
+    lastPinch=null;
+    lastTwoCenter=null;
+    lastTwoAngle=null;
+    longPressOrigin={id:e.pointerId,x:e.clientX,y:e.clientY};
+    longPressTimer=setTimeout(()=>{
+      const p=pointers.get(e.pointerId);
+      if(p && pointers.size===1 && Math.hypot(p.x-longPressOrigin.x,p.y-longPressOrigin.y)<9){
+        toggleLinesByLongPress();
+      }
+    },560);
+  }else if(pointers.size===2){
+    const a=[...pointers.values()];
+    lastPinch=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+    lastTwoCenter={
+      x:(a[0].x+a[1].x)/2,
+      y:(a[0].y+a[1].y)/2
+    };
+    lastTwoAngle=Math.atan2(a[1].y-a[0].y,a[1].x-a[0].x);
+    longPressOrigin=null;
+  }
+});
+canvas.addEventListener('pointermove',e=>{
+  const p=pointers.get(e.pointerId);if(!p)return;
+  p.x=e.clientX;p.y=e.clientY;
+  if(pointers.size===1){
+    const dx=p.x-p.lastX,dy=p.y-p.lastY;
+    if(longPressOrigin && Math.hypot(p.x-longPressOrigin.x,p.y-longPressOrigin.y)>9) cancelLongPress();
+    if(Math.abs(dx)+Math.abs(dy)>1)moved=true;
+    const sens=.0052;
+    const qy=qAxis([0,1,0],dx*sens);
+    const qx=qAxis([1,0,0],dy*sens);
+    orientation=qNorm(qMul(qx,qMul(qy,orientation)));
+    p.lastX=p.x;p.lastY=p.y;
+  } else if(pointers.size===2){
+    cancelLongPress();
+    const a=[...pointers.values()];
+    const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+    const center={
+      x:(a[0].x+a[1].x)/2,
+      y:(a[0].y+a[1].y)/2
+    };
+
+    // Pinch: cambia el zoom según cambia la distancia entre los dedos.
+    if(lastPinch!=null && d>4){
+      const zoomChange=Math.abs(d-lastPinch);
+      if(zoomChange>.25)moved=true;
+      fov=Math.max(28,Math.min(maxFovAllowed(),fov*(lastPinch/d)));
+    }
+
+    // Arrastre con dos dedos juntos: el centro de ambos dedos mueve el mapa
+    // exactamente con la misma lógica que un arrastre de un dedo.
+    if(lastTwoCenter){
+      const dx=center.x-lastTwoCenter.x;
+      const dy=center.y-lastTwoCenter.y;
+      if(Math.abs(dx)+Math.abs(dy)>.35){
+        moved=true;
+        const sens=.0052;
+        const qy=qAxis([0,1,0],dx*sens);
+        const qx=qAxis([1,0,0],dy*sens);
+        orientation=qNorm(qMul(qx,qMul(qy,orientation)));
+      }
+    }
+
+    // Giro de dos dedos: rota el mapa sobre el eje visual sin afectar al zoom.
+    const angle=Math.atan2(a[1].y-a[0].y,a[1].x-a[0].x);
+    if(lastTwoAngle!=null){
+      let da=angle-lastTwoAngle;
+      while(da>Math.PI)da-=2*Math.PI;
+      while(da<-Math.PI)da+=2*Math.PI;
+      if(Math.abs(da)>.0012){
+        moved=true;
+        // El signo se invierte porque las coordenadas de pantalla crecen hacia abajo.
+        orientation=qNorm(qMul(qAxis([0,0,1],-da),orientation));
+      }
+    }
+
+    lastPinch=d;
+    lastTwoCenter=center;
+    lastTwoAngle=angle;
+    a.forEach(o=>{o.lastX=o.x;o.lastY=o.y});
+  }
+});
+canvas.addEventListener('pointerup',e=>{
+  const p=pointers.get(e.pointerId);
+  const wasMulti=pointers.size>1;
+  cancelLongPress();
+  pointers.delete(e.pointerId);
+
+  if(pointers.size<2){
+    lastPinch=null;
+    lastTwoCenter=null;
+    lastTwoAngle=null;
+    const remaining=[...pointers.values()][0];
+    if(remaining){
+      remaining.lastX=remaining.x;
+      remaining.lastY=remaining.y;
+    }
+  }
+
+  // Un gesto de dos dedos nunca se interpreta como toque sobre una estrella.
+  if(p && !wasMulti && !moved && !longPressFired){
+    handleTap(e.clientX,e.clientY);
+    maybeExploreDoubleTap(e);
+  }
+  longPressOrigin=null;
+});
+canvas.addEventListener('pointercancel',e=>{
+  cancelLongPress();
+  pointers.delete(e.pointerId);
+  lastPinch=null;
+  lastTwoCenter=null;
+  lastTwoAngle=null;
+  longPressOrigin=null;
+});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+
+canvas.addEventListener('dblclick',e=>{
+  // El doble clic nativo del navegador puede dispararse además del reconocimiento
+  // que hacemos nosotros a nivel de pointer events. Lo anulamos para no duplicar
+  // ni invertir el estado de las etiquetas.
+  e.preventDefault();
+});
+
+let lastExploreTouchTap=null;
+function maybeExploreDoubleTap(e){
+  if(game.mode!=='explore' || els.manualConstLabelTrigger.value!=='double') return;
+
+  const pointerType=e.pointerType || 'mouse';
+  const now=performance.now();
+  const maxDt=pointerType==='touch' ? 420 : 340;
+  const maxDist=pointerType==='touch' ? 28 : 20;
+
+  if(lastExploreTouchTap &&
+     lastExploreTouchTap.pointerType===pointerType &&
+     now-lastExploreTouchTap.t<maxDt &&
+     Math.hypot(e.clientX-lastExploreTouchTap.x,e.clientY-lastExploreTouchTap.y)<maxDist){
+    toggleManualConstellationLabelAt(e.clientX,e.clientY);
+    lastExploreTouchTap=null;
+  }else{
+    lastExploreTouchTap={x:e.clientX,y:e.clientY,t:now,pointerType};
+  }
+}
+
+// Algunos navegadores exponen el giro físico del trackpad mediante GestureEvent.
+// Cuando existe, soportamos giro + pinch de forma simultánea.
+let nativeGestureRotation=0, nativeGestureScale=1;
+canvas.addEventListener('gesturestart',e=>{
+  e.preventDefault();
+  nativeGestureRotation=Number(e.rotation)||0;
+  nativeGestureScale=Number(e.scale)||1;
+},{passive:false});
+canvas.addEventListener('gesturechange',e=>{
+  e.preventDefault();
+
+  const rot=Number(e.rotation)||0;
+  let dRot=rot-nativeGestureRotation;
+  nativeGestureRotation=rot;
+  if(Math.abs(dRot)>.01){
+    orientation=qNorm(qMul(qAxis([0,0,1],-d2r(dRot)),orientation));
+  }
+
+  const scale=Number(e.scale)||1;
+  if(scale>0 && nativeGestureScale>0){
+    fov=Math.max(28,Math.min(maxFovAllowed(),fov*(nativeGestureScale/scale)));
+  }
+  nativeGestureScale=scale;
+},{passive:false});
+canvas.addEventListener('gestureend',e=>{
+  e.preventDefault();
+  nativeGestureRotation=0;
+  nativeGestureScale=1;
+},{passive:false});
+
+let lastWheelTrackpadAt=0;
+let trackpadPanX=0, trackpadPanY=0, trackpadPanRAF=0;
+
+function looksLikeTrackpadScroll(e){
+  // Los trackpads suelen generar wheel de alta resolución (deltaMode 0),
+  // con deltas pequeños/fraccionales y/o desplazamiento horizontal.
+  if(Math.abs(e.deltaX)>.01) return true;
+  if(e.deltaMode!==0) return false;
+  if(Math.abs(e.deltaY)<60) return true;
+  if(Math.abs(e.deltaY-Math.round(e.deltaY))>.001) return true;
+  return performance.now()-lastWheelTrackpadAt<180;
+}
+
+function flushTrackpadPan(){
+  trackpadPanRAF=0;
+
+  const dx=trackpadPanX;
+  const dy=trackpadPanY;
+  trackpadPanX=0;
+  trackpadPanY=0;
+
+  if(Math.abs(dx)+Math.abs(dy)<.001) return;
+
+  // Aplicamos X e Y en EL MISMO frame. Esto evita que un gesto diagonal
+  // llegue visualmente como una sucesión de pequeños tramos ortogonales.
+  const sens=.0032;
+  const qy=qAxis([0,1,0],-dx*sens);
+  const qx=qAxis([1,0,0],-dy*sens);
+  orientation=qNorm(qMul(qx,qMul(qy,orientation)));
+}
+
+function queueTrackpadPan(dx,dy){
+  trackpadPanX+=dx;
+  trackpadPanY+=dy;
+  if(!trackpadPanRAF) trackpadPanRAF=requestAnimationFrame(flushTrackpadPan);
+}
+
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+
+  // Algunos controladores pueden exponer el giro como deltaZ.
+  if(Math.abs(e.deltaZ||0)>.01 && !e.ctrlKey){
+    orientation=qNorm(qMul(qAxis([0,0,1],-(e.deltaZ||0)*.006),orientation));
+    return;
+  }
+
+  // Pinch del trackpad: zoom continuo.
+  if(e.ctrlKey){
+    const factor=Math.exp(e.deltaY*.0022);
+    fov=Math.max(28,Math.min(maxFovAllowed(),fov*factor));
+    return;
+  }
+
+  // Fallback de giro para trackpads cuyo navegador NO expone el twist:
+  // Alt + desplazamiento con dos dedos rota el campo alrededor del eje visual.
+  // Si hay deltaX lo usamos; si el controlador solo da deltaY, usamos ese.
+  if(e.altKey && looksLikeTrackpadScroll(e)){
+    lastWheelTrackpadAt=performance.now();
+    const d=Math.abs(e.deltaX)>.01 ? e.deltaX : e.deltaY;
+    if(Math.abs(d)>.001){
+      orientation=qNorm(qMul(qAxis([0,0,1],-d*.0045),orientation));
+    }
+    return;
+  }
+
+  // Dos dedos juntos: desplazamiento libre 2D.
+  // Acumulamos deltaX y deltaY antes de aplicar la rotación para conservar
+  // diagonales, curvas y cambios continuos de dirección.
+  if(looksLikeTrackpadScroll(e)){
+    lastWheelTrackpadAt=performance.now();
+
+    // Algunos controladores convierten el horizontal en Shift+deltaY.
+    // Lo reinterpretamos como X cuando no viene deltaX explícito.
+    let dx=e.deltaX;
+    let dy=e.deltaY;
+    if(e.shiftKey && Math.abs(dx)<.01 && Math.abs(dy)>.01){
+      dx=dy;
+      dy=0;
+    }
+
+    queueTrackpadPan(dx,dy);
+    return;
+  }
+
+  // Rueda física de ratón: zoom.
+  fov=Math.max(28,Math.min(maxFovAllowed(),fov + Math.sign(e.deltaY)*7));
+},{passive:false});
+
+function nearestStar(x,y,max=20){
+  let best=null,bd=max;
+  for(const p of projected){
+    const d=Math.hypot(x-p.x,y-p.y);
+    if(d<bd){bd=d;best=p.s}
+  }
+  return best;
+}
+
+// ---------- Juego ----------
+const game={
+  mode:'explore', round:0, total:10, correct:0, wrong:0,
+  targetConst:null, targetStar:null, selected:new Set(), needed:new Set(),
+  focusStar:null, locked:false, identifyKind:null, identifyRevealed:false,
+  learning:{
+    active:[],
+    queue:[],
+    current:null,
+    reviewing:false,
+    flashConst:null,
+    flashUntil:0,
+    mastered:new Set(),
+    reviewIds:[],
+    newIds:[],
+    completed:false
+  }
+};
+const modeNames={
+  explore:'Explorar',learning:'Aprendizaje',locate:'Localizar',advanced:'Avanzado',identify:'Identificar'
+};
+function toast(msg){
+  els.toast.textContent=msg;els.toast.classList.add('show');
+  clearTimeout(toast._t);toast._t=setTimeout(()=>els.toast.classList.remove('show'),1200);
+}
+
+function chooseNearbyLearningConstellations(activeIds,count){
+  const all=currentExploreConstellations();
+  const activeSet=new Set(activeIds);
+  const active=activeIds.map(getSkyConstellation).filter(Boolean);
+  const chosen=[];
+
+  for(let k=0;k<count;k++){
+    const candidates=all.filter(c=>
+      !activeSet.has(c.id) &&
+      !chosen.includes(c.id) &&
+      constellationVisibleInFilter(c)
+    );
+    if(!candidates.length) break;
+
+    const scored=candidates.map(c=>{
+      let d=Infinity;
+      for(const a of active){
+        d=Math.min(d,angularDistance(c.centroid,a.centroid));
+      }
+      for(const id of chosen){
+        const a=getSkyConstellation(id);
+        if(a)d=Math.min(d,angularDistance(c.centroid,a.centroid));
+      }
+      return {c,d};
+    }).sort((a,b)=>a.d-b.d);
+
+    // No siempre toma "la siguiente exacta": elige al azar entre las cercanas.
+    // Cuanto más cerca, más probable, pero el recorrido puede variar entre partidas.
+    const pool=scored.slice(0,Math.min(9,scored.length));
+    const weights=pool.map((x,i)=>1/(1+i*.55));
+    const total=weights.reduce((a,b)=>a+b,0);
+    let r=Math.random()*total, pick=pool[0].c;
+    for(let i=0;i<pool.length;i++){
+      r-=weights[i];
+      if(r<=0){pick=pool[i].c;break;}
+    }
+    chosen.push(pick.id);
+    activeSet.add(pick.id);
+  }
+  return chosen;
+}
+function fitLearningView(initial=false){
+  if(!initial)return;
+  const orion=getSkyConstellation('Ori');
+  if(!orion)return;
+
+  // Solo al comenzar: Orión al centro y el mayor campo posible sin deformación anisótropa.
+  animFrom=orientation.slice();
+  targetOrientation=qFromUnit(orion.centroid,[0,0,1]);
+  animStart=performance.now();
+  fov=undistortedFovLimit();
+}
+function setLearningQueue(ids,reviewing){
+  const L=game.learning;
+  const clean=[...new Set(ids)].filter(id=>L.active.includes(id));
+
+  // Regla pedagógica: cualquier constelación que vaya a ser preguntada
+  // deja de mostrarse como "aprendida" hasta que vuelva a acertarse.
+  clean.forEach(id=>L.mastered.delete(id));
+
+  L.reviewIds=reviewing ? [...clean] : [];
+  L.queue=shuffled(clean);
+  L.reviewing=reviewing;
+  L.current=null;
+  learningNextQuestion();
+}
+function learningNextQuestion(){
+  const L=game.learning;
+  if(game.mode!=='learning')return;
+
+  if(!L.queue.length){
+    setTimeout(()=>learningExpand(),520);
+    return;
+  }
+
+  L.current=L.queue.shift();
+  game.targetConst=L.current;
+  game.locked=false;
+  els.prompt.textContent=`Encuentra ${learningDisplayName(L.current)}`;
+  els.hint.textContent='Pulsa una estrella, una línea o el interior de la figura';
+  updateScore();
+}
+function learningExpand(){
+  const L=game.learning;
+  if(game.mode!=='learning')return;
+
+  const added=chooseNearbyLearningConstellations(L.active,2);
+  if(!added.length){
+    L.completed=true;
+    game.locked=true;
+    els.prompt.textContent='Mapa completado';
+    els.score.textContent='';
+    els.hint.textContent='Puedes volver a empezar desde el menú de modos';
+    toast('Recorrido completado ✨');
+    return;
+  }
+
+  L.active.push(...added);
+  L.newIds=[...added];
+  L.flashConst=null;
+  L.flashUntil=0;
+
+  // Las nuevas constelaciones aparecen donde corresponden en la esfera:
+  // no recentramos la cámara ni alteramos el zoom.
+  // Tras una ampliación se preguntan primero las dos constelaciones nuevas.
+  setLearningQueue(added,false);
+}
+function startLearning(){
+  const L=game.learning;
+  L.active=['Ori'];
+  L.queue=[];
+  L.current=null;
+  L.reviewing=true;
+  L.flashConst=null;
+  L.flashUntil=0;
+  L.mastered.clear();
+  L.reviewIds=[];
+  L.newIds=[];
+  L.completed=false;
+  game.correct=0;game.wrong=0;game.locked=true;
+  els.nextBtn.style.display='none';
+  els.choices.style.display='none';
+  els.gameLines.checked=true;
+
+  const added=chooseNearbyLearningConstellations(L.active,2);
+  L.active.push(...added);
+  L.newIds=[...added];
+  fitLearningView(true);
+
+  // Primera "ronda" invisible: Orión + dos vecinas, las tres en orden aleatorio.
+  setTimeout(()=>setLearningQueue(L.active,true),420);
+}
+function learningCorrect(){
+  const L=game.learning;
+  game.correct++;
+  game.locked=true;
+  L.mastered.add(L.current);
+  L.flashConst=L.current;
+  L.flashUntil=performance.now()+680;
+  toast('Correcto ✨');
+  updateScore();
+
+  setTimeout(()=>{
+    if(game.mode!=='learning')return;
+    L.flashConst=null;
+    if(L.queue.length){
+      learningNextQuestion();
+    }else{
+      // Si acabamos una revisión o las dos nuevas, ampliamos el mapa.
+      learningExpand();
+    }
+  },700);
+}
+function learningWrong(clickedId){
+  const L=game.learning;
+  game.wrong++;
+  game.locked=true;
+
+  // El mensaje identifica lo que el usuario HA PULSADO, no la respuesta pedida.
+  L.flashConst=null;
+  L.flashUntil=0;
+  toast(`No, esa era ${learningDisplayName(clickedId)}`);
+  updateScore();
+
+  setTimeout(()=>{
+    if(game.mode!=='learning')return;
+
+    if(L.reviewing){
+      // Si se falla durante el repaso, se repite solo ese bloque;
+      // esas constelaciones siguen sin color hasta acertarlas.
+      const review=L.reviewIds.length ? L.reviewIds : [L.current];
+      setLearningQueue(review,true);
+      return;
+    }
+
+    // Fallo en una pareja nueva: retroceder dos etapas.
+    // 9 -> 5, 7 -> 3, 5 -> 3.
+    const keep=Math.max(3,L.active.length-4);
+    L.active=L.active.slice(0,keep);
+    L.newIds=[];
+
+    // Todo lo que ha desaparecido deja de estar aprendido.
+    L.mastered=new Set([...L.mastered].filter(id=>L.active.includes(id)));
+
+    // Al volver a una etapa anterior, solo se "descolorea" el bloque
+    // que toca volver a comprobar. Lo anterior permanece consolidado.
+    let review;
+    if(keep<=3){
+      review=[...L.active];       // bloque inicial: las tres
+    }else{
+      review=L.active.slice(-2); // pareja que cerraba esa etapa
+    }
+    review.forEach(id=>L.mastered.delete(id));
+
+    // Ni recentrado ni cambio de zoom.
+    setLearningQueue(review,true);
+  },920);
+}
+
+function updateMainMenuVisibility(){
+  els.startMenu.classList.toggle('hidden',!startupMenuOpen);
+  els.bottomBar.style.display=startupMenuOpen ? 'none' : 'flex';
+  els.topBar.style.display=startupMenuOpen ? 'none' : 'grid';
+  if(startupMenuOpen) els.questionCard.style.display='none';
+}
+function openMainMenu(){
+  startupMenuOpen=true;
+  game.mode='explore';
+  game.locked=false;
+  game.targetStar=null;
+  game.targetConst=null;
+  closeImportantStarPanel();
+
+  // Cierre forzado: al volver a portada no debe sobrevivir ningún drawer.
+  els.settings.classList.remove('open');
+  els.modes.classList.remove('open');
+  drawerHistoryActive=false;
+  returnToMainMenuAfterSettings=false;
+
+  els.prompt.textContent='';
+  els.score.textContent='';
+  els.hint.textContent='';
+  els.choices.style.display='none';
+  els.nextBtn.style.display='none';
+  els.focusBtn.style.display='none';
+  els.revealBtn.style.display='none';
+  els.identifyAnswer.classList.remove('show');
+  updateMainMenuVisibility();
+}
+function chooseMainMode(mode){
+  startupMenuOpen=false;
+  appStarted=true;
+  els.prompt.textContent='';
+  els.score.textContent='';
+  updateMainMenuVisibility();
+  setMode(mode);
+}
+function modeButtonExitMarkup(){
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M15.1 4.9 L7.6 12 L15.1 19.1" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+function updateBottomControls(){
+  const identify = game.mode==='identify';
+  const locate = game.mode==='locate';
+  els.bottomBar.dataset.layout = identify ? 'identify' : (locate ? 'locate' : 'game');
+
+  els.modeBtn.className='iconbtn exitbtn';
+  els.modeBtn.innerHTML=modeButtonExitMarkup();
+  els.modeBtn.setAttribute('aria-label','Salir al menú principal');
+  els.modeBtn.title='Salir al menú principal';
+  els.modeBtn.onclick=()=>openMainMenu();
+
+  els.focusBtn.style.display = identify ? 'flex' : 'none';
+  els.revealBtn.style.display = (identify || locate) ? 'flex' : 'none';
+  els.revealBtn.title = identify ? 'Revelar respuesta' : 'Mostrar dónde está';
+  els.revealBtn.setAttribute('aria-label', identify ? 'Revelar respuesta' : 'Mostrar dónde está');
+}
+function setMode(mode){
+  closeImportantStarPanel();
+  startupMenuOpen=false;
+  game.mode=mode;game.round=0;game.correct=0;game.wrong=0;game.selected.clear();game.needed.clear();
+  fov=undistortedFovLimit();
+  game.focusStar=null;game.locked=false;els.nextBtn.style.display='none';els.choices.style.display='none';
+  els.focusBtn.style.display='none'; els.revealBtn.style.display='none';
+  document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  updateBottomControls();
+  els.modeLabel.textContent=(mode==='explore' ? '' : modeNames[mode].toUpperCase());
+  if(mode==='explore'){
+    els.questionCard.style.display='none';
+    els.prompt.textContent='';
+    els.score.textContent='';
+    els.hint.textContent='';
+    updateExploreHeader();
+  }else if(mode==='learning'){
+    els.questionCard.style.display='';
+    startLearning();
+  }else if(mode==='locate'){
+    els.questionCard.style.display='';
+    game.total=+els.roundCount.value;
+    newRound();
+  }else if(mode==='identify'){
+    els.questionCard.style.display='';
+    startIdentifyMode();
+  }else{
+    els.questionCard.style.display='';
+    els.prompt.textContent='Próximamente';
+  }
+  if(els.modes.classList.contains('open')) closeOpenDrawer(true);
+}
+function visibleFullConstellations(){
+  return currentExploreConstellations().filter(constellationVisibleInFilter);
+}
+function constellationNameById(id){
+  const c=getSkyConstellation(id);
+  return c ? displayConstellationName(c) : id;
+}
+function randomFullConstellationId(){
+  const pool=visibleFullConstellations();
+  return pool.length ? pool[Math.floor(Math.random()*pool.length)].id : null;
+}
+function pickRandomFigureStar(){
+  const pool=currentExploreStars().filter(s=>figureStarPassesSkyFilter(s));
+  return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
+}
+function pickRandomImportantStar(){
+  const pool=IMPORTANT_STAR_DATA.filter(importantStarVisible);
+  return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
+}
+function drawIdentifyFocus(t){
+  if(game.mode!=='identify' || !game.targetStar) return;
+  const p=projectVec(game.targetStar.v);
+  if(!p) return;
+
+  // La estrella objetivo se muestra aunque "Estrellas importantes" esté apagado.
+  const rr=Math.max(.7,magRadius(game.targetStar.mag||2));
+  const tw=twinkleStateForStar(game.targetStar,t);
+  ctx.save();
+  ctx.globalAlpha=.98;
+  drawStar(p.x,p.y,rr*1.25*tw.size,game.targetStar,false,false,tw.glow);
+  ctx.globalAlpha=1;
+
+  // Circulito de objetivo, análogo al utilizado para señalar elementos del juego.
+  const ring=Math.max(14,rr+11);
+  ctx.strokeStyle='#ffd66b';
+  ctx.lineWidth=2;
+  ctx.setLineDash([5,5]);
+  ctx.lineDashOffset=-(t/110);
+  ctx.beginPath();ctx.arc(p.x,p.y,ring,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+}
+function newIdentifyQuestion(){
+  if(game.mode!=='identify') return;
+  game.locked=false;
+  game.identifyRevealed=false;
+
+  const identifySetting=els.identifyQuestionMode.value;
+  if(identifySetting==='constellation'){
+    game.identifyKind='constellation';
+  }else if(identifySetting==='star'){
+    game.identifyKind='star';
+  }else{
+    game.identifyKind=Math.random()<.5 ? 'constellation' : 'star';
+  }
+
+  let target=game.identifyKind==='star' ? pickRandomImportantStar() : pickRandomFigureStar();
+
+  // Fallback if the selected/filtered pool happens to be empty.
+  if(!target && identifySetting==='both'){
+    game.identifyKind=game.identifyKind==='star' ? 'constellation' : 'star';
+    target=game.identifyKind==='star' ? pickRandomImportantStar() : pickRandomFigureStar();
+  }
+  if(!target) return;
+
+  game.targetStar=target;
+  game.focusStar=null;
+  centerOn(target.v);
+  els.score.textContent='';
+  els.choices.style.display='none';
+
+  if(game.identifyKind==='star'){
+    els.prompt.textContent='Identifica esta estrella';
+  }else{
+    els.prompt.textContent='Identifica esta constelación';
+  }
+}
+function revealLocateAnswer(){
+  if(game.mode!=='locate' || !game.targetConst) return;
+  const c=getSkyConstellation(game.targetConst);
+  if(!c) return;
+  const cent=filteredConstellationCentroid(c) || centroidOf(game.targetConst);
+  if(cent) centerOn(cent);
+  els.identifyAnswer.textContent=`${constellationNameById(game.targetConst)}`;
+  els.identifyAnswer.classList.add('show');
+  setTimeout(()=>{
+    els.identifyAnswer.classList.remove('show');
+    if(game.mode==='locate') newRound();
+  },1700);
+}
+
+function revealIdentifyAnswer(){
+  if(game.mode!=='identify' || game.identifyRevealed || !game.targetStar) return;
+  game.identifyRevealed=true;
+  game.locked=true;
+  const answer=game.identifyKind==='star'
+    ? game.targetStar.name
+    : constellationNameById(game.targetStar.c);
+  els.score.textContent='';
+  els.identifyAnswer.textContent=`Respuesta: ${answer}`;
+  els.identifyAnswer.classList.add('show');
+  setTimeout(()=>{
+    els.identifyAnswer.classList.remove('show');
+    if(game.mode==='identify'){
+      updateBottomControls();
+      newIdentifyQuestion();
+    }
+  },1800);
+}
+function startIdentifyMode(){
+  game.round=0;
+  game.correct=0;
+  game.wrong=0;
+  newIdentifyQuestion();
+}
+function randomConst(){
+  let keys=Object.keys(C);
+  if(localFilterOn()){
+    keys=keys.filter(k=>stars.some(s=>s.c===k && starPassesSkyFilter(s)));
+  }
+  return keys[Math.floor(Math.random()*keys.length)];
+}
+function randomNamedStar(){
+  let pool=stars.filter(s=>s.mag<=3.5 && starPassesSkyFilter(s));
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function newRound(){
+  if(game.mode==='identify'){
+    newIdentifyQuestion();
+    return;
+  }
+  if(game.round>=game.total){
+    finishGame();return;
+  }
+
+  game.round++;
+  game.selected.clear();
+  game.needed.clear();
+  game.focusStar=null;
+  game.locked=false;
+  els.nextBtn.style.display='none';
+  els.choices.style.display='none';
+  els.choices.innerHTML='';
+
+  if(game.mode==='locate'){
+    game.targetConst=randomFullConstellationId();
+    if(!game.targetConst) return;
+    els.prompt.textContent=`Localiza ${constellationNameById(game.targetConst)}`;
+    els.hint.textContent='Pulsa sobre la constelación';
+    updateScore();
+    return;
+  }
+
+  // Avanzado queda reservado como modo futuro.
+  els.prompt.textContent='Próximamente';
+  els.score.textContent='';
+}
+
+function updateScore(){
+  if(game.mode==='explore')return;
+  if(game.mode==='learning'){
+    els.score.textContent='';
+    return;
+  }
+  if(game.mode==='identify'){
+    return;
+  }
+  els.score.textContent=`${String(game.round).padStart(2,'0')}/${String(game.total).padStart(2,'0')} · ✓ ${game.correct} · ✕ ${game.wrong}`;
+}
+function buildChoices(correct,all){
+  const others=[...new Set(all.filter(x=>x!==correct))].sort(()=>Math.random()-.5).slice(0,3);
+  const opts=[correct,...others].sort(()=>Math.random()-.5);
+  els.choices.innerHTML='';
+  opts.forEach(txt=>{
+    const b=document.createElement('button');b.className='choice';b.textContent=txt;
+    b.onclick=()=>answerChoice(b,txt===correct,correct);
+    els.choices.appendChild(b);
+  });
+  els.choices.style.display='grid';
+}
+function answerChoice(btn,ok,correct){
+  if(game.locked)return;game.locked=true;
+  if(ok){game.correct++;btn.classList.add('good');toast('Correcto ✨')}
+  else{game.wrong++;btn.classList.add('bad');toast(`Era ${correct}`);[...els.choices.children].forEach(x=>{if(x.textContent===correct)x.classList.add('good')})}
+  updateScore();els.nextBtn.style.display='inline-block';
+}
+function handleTap(x,y){
+  if(game.mode==='explore'){
+    const important=nearestImportantStar(x,y,22);
+    if(important){
+      openImportantStarPanel(important);
+      return;
+    }
+    if(els.manualConstLabelTrigger.value==='single'){
+      if(toggleManualConstellationLabelAt(x,y)) return;
+    }
+    const hit=constellationLabelHits.find(h=>x>=h.x && x<=h.x+h.w && y>=h.y && y<=h.y+h.h);
+    if(hit){ toggleConstellationLanguage(); toast(els.constellationLanguage.value==='es'?'Nombres en español':'Nombres en latín'); }
+    return;
+  }
+
+  if(game.mode==='learning'){
+    if(game.locked)return;
+    const L=game.learning;
+    const hitConst=constellationHitTest(
+      x,y,L.active,
+      {preferId:L.current,deprioritizeIds:new Set([...L.mastered])}
+    );
+    if(!hitConst){toast('Pulsa sobre una de las constelaciones');return;}
+
+    if(hitConst===L.current){
+      learningCorrect();
+      return;
+    }
+
+    // Tocar una constelación ya identificada/consolidada no es un error:
+    // simplemente se ignora. Los fallos solo existen entre constelaciones
+    // que todavía están pendientes de identificar en este punto del juego.
+    if(L.mastered.has(hitConst)){
+      toast(`${learningDisplayName(hitConst)} ya estaba identificada`);
+      return;
+    }
+
+    learningWrong(hitConst);
+    return;
+  }
+
+  if(game.mode==='locate'){
+    if(game.locked) return;
+    const ids=visibleFullConstellations().map(c=>c.id);
+    const hitConst=constellationHitTest(x,y,ids,{preferId:game.targetConst});
+    if(!hitConst){
+      toast('Pulsa sobre una constelación');
+      return;
+    }
+    if(hitConst===game.targetConst){
+      game.correct++;
+      game.locked=true;
+      toast('Correcto ✨');
+      updateScore();
+      setTimeout(()=>{
+        if(game.mode==='locate') newRound();
+      },750);
+    }else{
+      game.wrong++;
+      toast(`Esa es ${constellationNameById(hitConst)}`);
+      updateScore();
+    }
+    return;
+  }
+
+  if(game.mode==='identify') return;
+  if(game.locked)return;
+  const s=nearestStar(x,y,24);
+  if(!s){toast('No hay una estrella seleccionable ahí');return}
+  // Los modos de selección estrella-a-estrella quedan reservados para Avanzado.
+  return;
+}
+function finishGame(){
+  els.prompt.textContent='Partida terminada';
+  els.score.textContent=`Aciertos: ${game.correct}/${game.total} · Fallos: ${game.wrong}`;
+  els.hint.textContent='Puedes repetir o cambiar de modo';
+  els.nextBtn.textContent='Otra partida';els.nextBtn.style.display='inline-block';
+  game.locked=true;
+}
+function centerOn(v){
+  animFrom=orientation.slice();
+  targetOrientation=qFromUnit(v,[0,0,1]);
+  animStart=performance.now();
+}
+els.nextBtn.onclick=()=>{
+  if(game.mode==='identify'){
+    revealIdentifyAnswer();
+    return;
+  }
+  if(game.round>=game.total && game.locked){
+    game.round=0;game.correct=0;game.wrong=0;els.nextBtn.textContent='Siguiente';newRound();
+  } else newRound();
+};
+
+let drawerHistoryActive=false;
+
+function anyDrawerOpen(){
+  return els.settings.classList.contains('open') || els.modes.classList.contains('open');
+}
+function openDrawer(drawer){
+  els.settings.classList.remove('open');
+  els.modes.classList.remove('open');
+  drawer.classList.add('open');
+  if(!drawerHistoryActive){
+    history.pushState({constelacionesDrawer:true},'',location.href);
+    drawerHistoryActive=true;
+  }
+}
+function closeOpenDrawer(consumeHistory=true){
+  const wasOpen=anyDrawerOpen();
+  els.settings.classList.remove('open');
+  els.modes.classList.remove('open');
+  if(wasOpen && consumeHistory && drawerHistoryActive){
+    history.back(); // consume la entrada artificial; popstate remata el cierre
+  }
+}
+addEventListener('popstate',()=>{
+  if(anyDrawerOpen()){
+    els.settings.classList.remove('open');
+    els.modes.classList.remove('open');
+  }
+  drawerHistoryActive=false;
+  if(returnToMainMenuAfterSettings){
+    returnToMainMenuAfterSettings=false;
+    openMainMenu();
+  }
+});
+
+document.querySelectorAll('[data-startmode]').forEach(b=>{
+  b.onclick=()=>chooseMainMode(b.dataset.startmode);
+});
+document.querySelectorAll('[data-coming-soon]').forEach(b=>{
+  b.onclick=()=>toast('Próximamente');
+});
+els.startSettingsBtn.onclick=()=>{
+  returnToMainMenuAfterSettings=false;
+  startupMenuOpen=false;
+  updateMainMenuVisibility();
+  setMode('explore');
+  openDrawer(els.settings);
+};
+updateBottomControls();
+els.closeModes.onclick=()=>closeOpenDrawer(true);
+els.settingsBtn.onclick=()=>{
+  returnToMainMenuAfterSettings=false;
+  openDrawer(els.settings);
+};
+els.closeSettings.onclick=()=>{
+  els.settings.classList.remove('open');
+  els.modes.classList.remove('open');
+  drawerHistoryActive=false;
+  if(returnToMainMenuAfterSettings){
+    returnToMainMenuAfterSettings=false;
+    openMainMenu();
+  }
+};
+els.starInfoClose.onclick=()=>closeImportantStarPanel();
+els.showImportantStars.onchange=()=>{
+  if(!els.showImportantStars.checked) closeImportantStarPanel();
+};
+if(els.resetBtn){
+  els.resetBtn.onclick=()=>{
+    animFrom=orientation.slice();targetOrientation=[1,0,0,0];animStart=performance.now();
+    fov=undistortedFovLimit();
+  };
+}
+els.orientBtn.onclick=()=>orientViewForActiveFilter();
+els.focusBtn.onclick=()=>{
+  if(game.mode==='identify' && game.targetStar) centerOn(game.targetStar.v);
+};
+els.revealBtn.onclick=()=>{
+  if(game.mode==='identify') revealIdentifyAnswer();
+  else if(game.mode==='locate') revealLocateAnswer();
+};
+els.roundCount.onchange=()=>{if(game.mode!=='explore'){game.total=+els.roundCount.value;game.round=0;game.correct=0;game.wrong=0;newRound()}};
+els.identifyQuestionMode.onchange=()=>{
+  if(game.mode==='identify') newIdentifyQuestion();
+};
+
+els.limitZoomOut.onchange=()=>{
+  if(els.limitZoomOut.checked && fov>undistortedFovLimit()){
+    fov=undistortedFovLimit();
+    toast('Zoom limitado para evitar distorsión');
+  }
+};
+els.themeMode.onchange=updateThemeControls;
+els.constellationLanguage.onchange=()=>{};
+els.skyFilter.onchange=()=>{
+  updateExploreHeader();
+  if(game.mode==='learning'){
+    startLearning();
+  }else if(game.mode!=='explore'){
+    game.round=0;game.correct=0;game.wrong=0;newRound();
+  }
+};
+updateThemeControls();
+updateExploreHeader();
+
+els.backgroundDensity.oninput=()=>{els.densityValue.textContent=els.backgroundDensity.value};
+els.backgroundVisibility.oninput=()=>{els.visibilityValue.textContent=els.backgroundVisibility.value};
+els.gridThickness.oninput=()=>{els.gridThicknessValue.textContent=Number(els.gridThickness.value).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')};
+els.twinkleFrequency.oninput=()=>{els.twinkleFrequencyValue.textContent=Number(els.twinkleFrequency.value).toFixed(1).replace(/\.0$/,'')};
+els.twinkleIntensity.oninput=()=>{els.twinkleIntensityValue.textContent=Number(els.twinkleIntensity.value).toFixed(1).replace(/\.0$/,'')};
+els.densityValue.textContent=els.backgroundDensity.value;
+els.visibilityValue.textContent=els.backgroundVisibility.value;
+els.gridThicknessValue.textContent=Number(els.gridThickness.value).toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
+els.twinkleFrequencyValue.textContent=Number(els.twinkleFrequency.value).toFixed(1).replace(/\.0$/,'');
+els.twinkleIntensityValue.textContent=Number(els.twinkleIntensity.value).toFixed(1).replace(/\.0$/,'');
+linePaletteButtons.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    linePalette=btn.dataset.linepalette;
+    updateLinePaletteUI();
+  });
+});
+updateLinePaletteUI();
+
+
+
+// Atajos de teclado
+window.addEventListener('keydown',e=>{
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  const tag=(document.activeElement?.tagName||'').toLowerCase();
+  if(['input','select','textarea','button'].includes(tag) || document.activeElement?.isContentEditable) return;
+
+  const key=e.key.toLowerCase();
+  if(key==='z'){
+    els.showConstNames.checked=!els.showConstNames.checked;
+    toast(els.showConstNames.checked ? 'Nombres de constelaciones: visibles' : 'Nombres de constelaciones: ocultos');
+    e.preventDefault();
+  }else if(key==='x'){
+    els.showLines.checked=!els.showLines.checked;
+    toast(els.showLines.checked ? 'Líneas de constelaciones: visibles' : 'Líneas de constelaciones: ocultas');
+    e.preventDefault();
+  }else if(key==='c'){
+    orientViewForActiveFilter();
+    e.preventDefault();
+  }
+});
+
+// Deslizar el panel de ajustes hacia la derecha para cerrarlo,
+// pero nunca cuando se está interactuando con un slider.
+let settingsSwipeStart=null;
+let settingsSwipeBlocked=false;
+els.settings.addEventListener('pointerdown',e=>{
+  settingsSwipeBlocked=!!e.target.closest('input[type="range"]');
+  if(settingsSwipeBlocked){
+    settingsSwipeStart=null;
+    return;
+  }
+  settingsSwipeStart={x:e.clientX,y:e.clientY,t:performance.now()};
+});
+els.settings.addEventListener('pointerup',e=>{
+  if(settingsSwipeBlocked){
+    settingsSwipeBlocked=false;
+    settingsSwipeStart=null;
+    return;
+  }
+  if(!settingsSwipeStart)return;
+  const dx=e.clientX-settingsSwipeStart.x, dy=e.clientY-settingsSwipeStart.y;
+  if(dx>70 && Math.abs(dx)>Math.abs(dy)*1.25){
+    closeOpenDrawer(true);
+  }
+  settingsSwipeStart=null;
+});
+els.settings.addEventListener('pointercancel',()=>{
+  settingsSwipeStart=null;
+  settingsSwipeBlocked=false;
+});
+
+// Cerrar paneles tocando fuera con Escape / botón atrás del teclado.
+addEventListener('keydown',e=>{
+  if(e.key==='Escape' && anyDrawerOpen()) closeOpenDrawer(true);
+});
+
+
+const APP_VERSION='0.1.0';
+
+async function tryEnterImmersive(){
+  // En una PWA instalada con display:fullscreen Android ya debe abrir sin chrome.
+  // En navegador intentamos ocultar UI adicional tras un gesto del usuario.
+  if(document.fullscreenElement) return;
+  const el=document.documentElement;
+  if(el.requestFullscreen){
+    try{ await el.requestFullscreen({navigationUI:'hide'}); }catch{}
+  }
+}
+
+function setupPwaUpdates(){
+  if(!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+  const banner=document.getElementById('updateBanner');
+  const button=document.getElementById('updateNow');
+  let registration=null;
+  let reloading=false;
+
+  const showUpdate=async reg=>{
+    registration=reg;
+    try{
+      const response=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});
+      const data=await response.json();
+      const label=button?.querySelector('small');
+      if(label&&data.version) label.textContent=`v${data.version}`;
+    }catch{}
+    banner?.classList.add('show');
+  };
+
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(reloading)return;
+    reloading=true;
+    location.reload();
+  });
+
+  navigator.serviceWorker.register('./sw.js').then(reg=>{
+    registration=reg;
+    if(reg.waiting) showUpdate(reg);
+    reg.addEventListener('updatefound',()=>{
+      const worker=reg.installing;
+      if(!worker)return;
+      worker.addEventListener('statechange',()=>{
+        if(worker.state==='installed' && navigator.serviceWorker.controller) showUpdate(reg);
+      });
+    });
+    reg.update().catch(()=>{});
+  }).catch(()=>{});
+
+  button?.addEventListener('click',()=>{
+    const waiting=registration?.waiting;
+    if(!waiting)return;
+    button.disabled=true;
+    button.classList.add('updating');
+    waiting.postMessage({type:'SKIP_WAITING'});
+  });
+}
+
+document.querySelectorAll('[data-startmode]').forEach(btn=>{
+  btn.addEventListener('click',()=>tryEnterImmersive(),{capture:true});
+});
+document.getElementById('startSettingsBtn')?.addEventListener('click',()=>tryEnterImmersive(),{capture:true});
+if('requestIdleCallback' in window){
+  requestIdleCallback(()=>setupPwaUpdates(),{timeout:1200});
+}else{
+  setTimeout(setupPwaUpdates,180);
+}
+
+// Vista inicial centrada aproximadamente en Orión.
+orientation=qFromUnit(centroidOf('Orion'),[0,0,1]);
+els.prompt.textContent='';
+els.score.textContent='';
+els.questionCard.style.display='none';
+updateExploreHeader();
+updateBottomControls();
+updateMainMenuVisibility();
+})();
+</script>
+</body>
+</html>

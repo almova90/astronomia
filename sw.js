@@ -1,11 +1,10 @@
-const APP_VERSION='0.1.0';
+const APP_VERSION='0.1.1';
 const CACHE_NAME=`astronomia-${APP_VERSION}`;
 const APP_SHELL=[
   './',
   './index.html',
   './manifest.webmanifest',
-  './icon-192.png',
-  './icon-512.png'
+  './icon.svg'
 ];
 
 self.addEventListener('install',event=>{
